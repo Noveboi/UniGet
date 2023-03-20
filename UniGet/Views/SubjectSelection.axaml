@@ -1,0 +1,47 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:UniGet.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        Width="800" Height="450"
+        MinWidth="500" MinHeight="300"
+        x:Class="UniGet.Views.SubjectSelection"
+        Title="SubjectSelection">
+  <Window.Styles>
+    <Style Selector="Button#subButton">
+      <Setter Property="Background" Value="#11AAFF"/>
+      <Setter Property="Foreground" Value="#EFEFEF"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="FontSize" Value="30"/>
+      <Setter Property="FontWeight" Value="ExtraBold"/>
+    </Style>
+    <Style Selector="TextBlock#titleBar">
+      <Setter Property="Foreground" Value="#EEEEEE"/>
+      <Setter Property="TextAlignment" Value="Center"/>
+      <Setter Property="FontSize" Value="24"/>
+    </Style>
+  </Window.Styles>
+  <Grid RowDefinitions="50 * 75">
+    <Grid Background="IndianRed">
+      <TextBlock HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                 Text="Select any subject you are interested in!"
+                 Name="titleBar"/>
+    </Grid>
+    <TreeView Items="{Binding Courses}"
+              SelectedItems="{Binding SelectedSubjects, Mode=TwoWay}"
+              Grid.Row="1">
+      <TreeView.ItemTemplate>
+        <TreeDataTemplate ItemsSource="{Binding Children}">
+          <TextBlock Text="{Binding Name}"></TextBlock>
+        </TreeDataTemplate>
+      </TreeView.ItemTemplate>
+    </TreeView>
+    <Button HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+            Grid.Row="3" 
+            Content="Subscribe"
+            Name="subButton"
+            Command="{Binding Subscribe}"/>
+  </Grid>
+</Window>

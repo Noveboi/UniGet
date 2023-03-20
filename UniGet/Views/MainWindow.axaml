@@ -1,0 +1,148 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:UniGet.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        Width="1280" Height="720"
+        MinWidth="650" MinHeight="450"
+        x:Class="UniGet.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        WindowStartupLocation="CenterScreen">
+  <Window.Styles>
+    <!-- Style the children of the MenuStrip DockPanel -->
+    <Style Selector="DockPanel.MenuStrip > TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="15 0 0 0"/>
+    </Style>
+    <!-- Style the "Subjects" label -->
+    <Style Selector="TextBlock#subjectsLabel, TextBlock#selectedSubLabel">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="Foreground" Value="#EEEEEE"/>
+      <Setter Property="Background" Value="#D63B3B"/>
+      <Setter Property="FontSize" Value="24"/>
+    </Style>
+    <!-- Style the 'Subscribe' (+) button-->
+    <Style Selector="Button#addSubjectButton">
+      <Setter Property="Background" Value="#11AAFF"/>
+      <Setter Property="Foreground" Value="#EFEFEF"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="FontSize" Value="30"/>
+      <Setter Property="FontWeight" Value="ExtraBold"/>
+    </Style>
+    <Style Selector="Button#remSubjectButton">
+      <Setter Property="Background" Value="#FF2211"/>
+      <Setter Property="Foreground" Value="#EFEFEF"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="FontSize" Value="30"/>
+      <Setter Property="FontWeight" Value="ExtraBold"/>
+    </Style>
+  </Window.Styles>
+
+  <Design.DataContext>
+    <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
+  <!-- MainWindow Grid-->
+  <Grid RowDefinitions="40 * 20">
+<!--///////HEADER SECTION///////-->
+    <!-- Menu Strip-->
+    <DockPanel Classes="MenuStrip" Grid.Row="0">
+      <TextBlock Text="File"/>
+      <TextBlock Text="Edit"/>
+      <TextBlock Text="Options"/>
+      <TextBlock Text="Help"/>
+    </DockPanel>
+    <!-- Main Content Grid (Where the majority of the UI lives)-->
+    <Grid RowDefinitions="60 *" ColumnDefinitions="* 3*" Grid.Row="1">
+      <!-- Subjects Label-->
+      <Grid Grid.Row="0" Grid.Column="0" Background="#D63B3B">
+        <TextBlock Name="subjectsLabel" Text="Subjects"/>
+      </Grid>
+      <!-- Selected Subject -->
+      <Grid Grid.Row="0" Grid.Column="1" Background="#D63B3B">
+        <TextBlock Name="selectedSubLabel" Text="{Binding SelectedSubjectName}"
+                   FontWeight="Bold"></TextBlock>
+      </Grid>
+<!--///////MAIN SECTION///////-->
+      <!-- Subjects List-->
+      <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="* 50">
+        <TreeView Items="{Binding SubjectsList}" 
+                  SelectedItem="{Binding SelectedSubject}">
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate>
+              <TextBlock Text="{Binding Subject.Name}"/>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+        </TreeView>
+        <Grid Grid.Row="1" ColumnDefinitions="* *">
+          <Button Name="addSubjectButton" 
+                  Content="+" Grid.Column="0"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                  Command="{Binding OpenSubSelectWindow}"/>
+          <Button Name="remSubjectButton"
+                  Content="-" Grid.Column="1"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                  Command="{Binding RemoveSubject}"/>
+        </Grid>
+      </Grid>
+      <!-- Subject Documents Table-->
+      <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="* 50">
+        <DataGrid  Items="{Binding SubjectDocs}" 
+                   SelectedIndex="{Binding SelectedDocIdx}">
+          <DataGrid.Resources>
+            <vm:BitmapValueConverter x:Key="bitmapConverter"/>
+          </DataGrid.Resources>
+          <DataGrid.Columns>
+            <DataGridTemplateColumn Header="Type">
+              <DataTemplate>
+                <Image Source="{Binding TypeImagePath, 
+                       Converter={StaticResource bitmapConverter}}"
+                       Width="30"
+                       Height="30"/>
+              </DataTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTextColumn Header="Name"
+                                Binding="{Binding Name}"
+                                Width="*"/>
+            <DataGridTextColumn Header="Size"
+                                Binding="{Binding Size}"/>
+            <DataGridTextColumn Header="Date" 
+                                Binding="{Binding DatePublished}"/>
+            <DataGridTemplateColumn>
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <Button Content="Download"
+                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                          Command="{Binding DataContext.DownloadDocAtIndex, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                          CommandParameter="{Binding RelativeSource={RelativeSource
+                           Self}, Path=DataContext}"
+                          IsEnabled="True">
+                  </Button>
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+          </DataGrid.Columns>
+        </DataGrid>
+        <Button Grid.Row="1"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                Command="{Binding GoToPreviousDirectory}"
+                Background="{Binding $parent.Background}"
+                IsVisible="{Binding BackButtonVisible}">
+          <Image Source="/Assets/back-arrow.png"/>
+        </Button>
+      </Grid>
+    </Grid>
+    <Grid Grid.Row="2" Background="#D63B3B">
+      <TextBlock Text="Progress reporting goes here" Foreground="White"
+                 HorizontalAlignment="Center" FontSize="12" 
+                 VerticalAlignment="Center"/>
+    </Grid>
+  </Grid>
+</Window>
