@@ -24,20 +24,20 @@ namespace UniGet.Models.AppSettings
             {
                 // Set the _instance ONLY when it's null
                 _instance ??= JsonManager.ReadJsonFromFile<LocalAppSettings>(_path);
+                if (_instance == null)
+                    WriteDefaults();
             }
             catch (DirectoryNotFoundException dex)
             { 
                 Debug.WriteLine(dex.Message);
                 Directory.CreateDirectory(Shared.ConfigDirectory);
-                _instance = new();
-                _instance.WriteDefaults();
+                WriteDefaults();
             }
             catch (FileNotFoundException fex)
             {
                 // Create the appsettings.json file using default values
                 Debug.WriteLine(fex.Message);
-                _instance = new();
-                _instance.WriteDefaults();
+                WriteDefaults();
             }
             return _instance;
         }
@@ -81,8 +81,9 @@ namespace UniGet.Models.AppSettings
         /// <summary>
         /// Save default settings to appsettings.json
         /// </summary>
-        public void WriteDefaults()
+        public static void WriteDefaults()
         {
+            _instance = new();
             _instance.UserStats = new UserStats() { LastRunTime = DateTime.MinValue, LastUpdateTime = DateTime.MinValue };
             _instance.UserConfig = new UserConfig() { Subscriptions = new List<Subject>() };
             JsonManager.WriteJsonToFile(_instance, _path);

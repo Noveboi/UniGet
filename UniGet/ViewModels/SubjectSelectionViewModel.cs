@@ -32,10 +32,12 @@ namespace UniGet.ViewModels
             SelectedSubjects = new ObservableCollection<TreeNode>();
             Subscribe = ReactiveCommand.Create(SubscribeToSelectedSubjects);
             Courses = new ObservableCollection<TreeNode>();
-            new Action(async () =>
-            {
-                ReadFromCoursesAndSetupTree(await UpdateCourses());
-            })();
+
+            ReadFromCoursesAndSetupTree
+                (JsonManager.
+                ReadJsonFromFile<CourseNameGetModel>
+                ($"{Shared.ConfigDirectory}/course_names.json")
+                .CourseInfo.Select(tup => tup.CourseName).ToList());
         }
 
         private void SubscribeToSelectedSubjects()
@@ -46,39 +48,6 @@ namespace UniGet.ViewModels
                 LocalAppSettings.GetInstance().AddSubscription(subject);
                 _subjectNodes.Add(new SubjectNode(subject));
             }
-        }
-
-        /// <summary>
-        /// Updates every month
-        /// </summary>
-        /// <returns></returns>
-        private async Task<List<string>> UpdateCourses()
-        {
-            string courseNamesPath = $"{Shared.ConfigDirectory}/course_names.json";
-            var courseNamesModel = JsonManager.ReadJsonFromFile<CourseNameGetModel>(courseNamesPath);
-            List<(string courseName, string courseId)> courseInfos = new List<(string, string)>();
-            if (courseNamesModel.LastCheckDate.AddMonths(1) <= DateTime.Now || courseNamesModel.CourseInfo.Count == 0)
-            {
-                CourseBuilder builder = new();
-                List<(string courseName, string, string courseId)> courses = await builder.GetCoursesInfoAsync();
-
-                for (int i = 0; i < courses.Count; i++)
-                {
-                    courseInfos.Add((courses[i].courseName, courses[i].courseId));
-                    Debug.WriteLine(courseInfos[i]);
-                }
-
-                JsonManager.WriteJsonToFile<CourseNameGetModel>(new()
-                {
-                    LastCheckDate = DateTime.Now,
-                    CourseInfo = courseInfos
-                }, courseNamesPath);
-            }
-            else
-            {
-                courseInfos = courseNamesModel.CourseInfo;
-            }
-            return courseInfos.Select(course => course.courseName).ToList();
         }
 
         private void ReadFromCoursesAndSetupTree(List<string> courseNames)

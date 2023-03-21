@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UniGet.Models;
 using UniGet.Models.AppSettings;
@@ -45,6 +46,7 @@ namespace UniGet
                 Directory.CreateDirectory(Shared.ConfigDirectory);
             try
             {
+                await UpdateCourses();
                 await GetUpdates();
             }
             catch (Exception ex)
@@ -104,6 +106,40 @@ namespace UniGet
 
             await new CourseBuilder().GetCoursesAsync(scheduledCourses);
 
+        }
+        /// <summary>
+        /// Updates every month
+        /// </summary>
+        /// <returns></returns>
+        private async Task<List<string>> UpdateCourses()
+        {
+            string courseNamesPath = $"{Shared.ConfigDirectory}/course_names.json";
+            var courseNamesModel = JsonManager.ReadJsonFromFile<CourseNameGetModel>(courseNamesPath);
+            List<(string courseName, string courseId)> courseInfos = new List<(string, string)>();
+            if (courseNamesModel == null || 
+                courseNamesModel.LastCheckDate.AddMonths(1) <= DateTime.Now || 
+                courseNamesModel.CourseInfo.Count == 0)
+            {
+                CourseBuilder builder = new();
+                List<(string courseName, string, string courseId)> courses = await builder.GetCoursesInfoAsync();
+
+                for (int i = 0; i < courses.Count; i++)
+                {
+                    courseInfos.Add((courses[i].courseName, courses[i].courseId));
+                    Debug.WriteLine(courseInfos[i]);
+                }
+
+                JsonManager.WriteJsonToFile<CourseNameGetModel>(new()
+                {
+                    LastCheckDate = DateTime.Now,
+                    CourseInfo = courseInfos
+                }, courseNamesPath);
+            }
+            else
+            {
+                courseInfos = courseNamesModel.CourseInfo;
+            }
+            return courseInfos.Select(course => course.courseName).ToList();
         }
     }
 }

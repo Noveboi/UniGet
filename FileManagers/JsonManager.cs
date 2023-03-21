@@ -13,7 +13,7 @@ namespace FileManagers
         private static string _configFilePath = $"{Shared.ApplicationDirectory}/config.json";
         public static void WriteCourseToFile(Course course)
         {
-            WriteJsonToFile(course, $"{Shared.ApplicationDirectory}/{course.Name}.json");
+            WriteJsonToFile(course, $"{Shared.ConfigDirectory}/{course.Name}.json");
         }
 
         public static void WriteSubscriptionsToFile(Subscriptions subs)
@@ -23,7 +23,7 @@ namespace FileManagers
 
         public static Course ReadCourseFromFile(string courseName)
         {
-            return ReadJsonFromFile<Course>($"{Shared.ApplicationDirectory}/{courseName}.json");
+            return ReadJsonFromFile<Course>($"{Shared.ConfigDirectory}/{courseName}.json");
         }
 
         public static Subscriptions ReadSubscriptionsFromFile()
@@ -44,7 +44,6 @@ namespace FileManagers
             if (!File.Exists(filePath))
             {
                 File.Create(filePath).Close();
-                return default;
             }
 
             using (StreamReader reader = new StreamReader
@@ -82,7 +81,6 @@ namespace FileManagers
         private static void SetSerializerProperties(JsonSerializer serializer)
         {
             serializer.DateFormatString = "dd-MM-yyyy HH:mm:ss";
-            serializer.Formatting = Formatting.Indented;
             serializer.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
         }
     }
