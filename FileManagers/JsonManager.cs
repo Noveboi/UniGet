@@ -34,7 +34,7 @@ namespace FileManagers
         public static T ReadJsonFromFile<T>(string filePath)
         {
             Stopwatch watch = Stopwatch.StartNew();
-            Debug.WriteLine($"Starting reading from {filePath}.");
+            AppLogger.WriteLine($"Starting reading JSON from {filePath}.");
 
             JsonSerializer serializer = new JsonSerializer();
             SetSerializerProperties(serializer);
@@ -54,7 +54,7 @@ namespace FileManagers
             }
 
             watch.Stop();
-            Debug.WriteLine($"Finished reading {filePath}. Took {watch.ElapsedMilliseconds}ms");
+            AppLogger.WriteLine($"Finished reading JSON from {filePath}. Took {watch.ElapsedMilliseconds}ms");
 
             return obj;
         }
@@ -62,7 +62,7 @@ namespace FileManagers
         public static void WriteJsonToFile<T>(T serializableObj, string filePath)
         {
             Stopwatch watch = Stopwatch.StartNew();
-            Debug.WriteLine($"Starting writing object: {serializableObj} to {filePath}.");
+            AppLogger.WriteLine($"Starting writing JSON object: {serializableObj} to {filePath}.");
 
             JsonSerializer serializer = new JsonSerializer();
             SetSerializerProperties(serializer);
@@ -75,7 +75,7 @@ namespace FileManagers
             }
 
             watch.Stop();
-            Debug.WriteLine($"Finished writing to {filePath}. Took {watch.ElapsedMilliseconds}ms");
+            AppLogger.WriteLine($"Finished writing to JSON object at {filePath}. Took {watch.ElapsedMilliseconds}ms");
         }
 
         private static void SetSerializerProperties(JsonSerializer serializer)

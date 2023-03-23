@@ -28,15 +28,15 @@ namespace UniGet.Models.AppSettings
                     WriteDefaults();
             }
             catch (DirectoryNotFoundException dex)
-            { 
-                Debug.WriteLine(dex.Message);
+            {
+                AppLogger.WriteLine($"Fixing exception: {dex.Message}", AppLogger.MessageType.HandledException);
                 Directory.CreateDirectory(Shared.ConfigDirectory);
                 WriteDefaults();
             }
             catch (FileNotFoundException fex)
             {
                 // Create the appsettings.json file using default values
-                Debug.WriteLine(fex.Message);
+                AppLogger.WriteLine($"Fixing exception: {fex.Message}", AppLogger.MessageType.HandledException);
                 WriteDefaults();
             }
             return _instance;

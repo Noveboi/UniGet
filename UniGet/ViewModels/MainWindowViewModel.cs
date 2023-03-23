@@ -89,8 +89,6 @@ namespace UniGet.ViewModels
         {
             _selectedSubject.PropertyChanged += SelectedSubject_Changed;
             SubjectsList = SetupSubjectsTree();
-
-            Debug.WriteLine("INIT!");
         }
 
         public async Task DownloadDocAtIndex(object param)
@@ -98,8 +96,6 @@ namespace UniGet.ViewModels
             // SEPARATE BEHAVIOR FOR FILE AND FOLDER
             DocumentDataGridModel doc = (DocumentDataGridModel)param;
             DocumentCollection docsToDownload = new();
-            Debug.WriteLine(doc.Name);
-            Debug.WriteLine(doc.File.DownloadLink);
 
             if (doc.File.Type == DocType.Dir)
             {

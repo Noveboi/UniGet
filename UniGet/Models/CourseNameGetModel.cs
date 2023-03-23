@@ -29,7 +29,7 @@ namespace UniGet.Models
             }
             catch (FileNotFoundException ex)
             {
-                Debug.WriteLine($"Fixing exception: {ex.Message}");
+                AppLogger.WriteLine($"Fixing exception: {ex.Message}", AppLogger.MessageType.HandledException);
                 JsonManager.WriteJsonToFile(new CourseNameGetModel(), _path);
             }
 

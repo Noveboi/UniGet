@@ -18,7 +18,7 @@ namespace Scraper
         /// Get the courses specified in the list (by name)
         /// </summary>
         /// <returns></returns>
-        public async Task<List<Course>> GetCoursesAsync(List<string> courseNames, bool autoWrite = true)
+        public async Task<List<Course>> GetCoursesBulkAsync(List<string> courseNames, bool autoWrite = true)
         {
             List<Course> courses = new();
             List<Task<Course>> tasks = new();
@@ -31,7 +31,27 @@ namespace Scraper
 
             await Task.WhenAll(tasks);
             tasks.ForEach(task => courses.Add(task.Result));
-            Debug.WriteLine("Finished!");
+            return courses;
+        }
+
+        /// <summary>
+        /// Get the courses specified in the list (by name)
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<Course>> GetCoursesAsync(List<string> courseNames, bool autoWrite = true)
+        {
+            Stopwatch s = Stopwatch.StartNew();
+
+            List<Course> courses = new();
+            coursesInfo = await GetCoursesInfoAsync();
+            foreach (var cI in coursesInfo)
+            {
+                if (courseNames.Contains(cI.CourseName))
+                    courses.Add(await GetCourseAsync(cI.CourseName, autoWrite));
+            }
+
+            s.Stop();
+            await AppLogger.WriteLineAsync($"Finished getting courses in {(double)s.ElapsedMilliseconds / 1000}s");
             return courses;
         }
 
@@ -45,7 +65,7 @@ namespace Scraper
             if (courseName == "ΑΝΑΚΟΙΝΩΣΕΙΣ") 
                 return new Course("ΑΝΑΚΟΙΝΩΣΕΙΣ", new List<Subject>());
 
-            Debug.WriteLine($"Scraping subjects from course: {courseName}");
+            await AppLogger.WriteLineAsync($"Scraping subjects from course: {courseName}");
             Stopwatch watch = Stopwatch.StartNew();
 
             List<Subject> courseSubjects = new();
@@ -97,11 +117,11 @@ namespace Scraper
                 await Task.WhenAll(tasks);
                 tasks.ForEach(task => courseSubjects.Add(task.Result));
                 watch.Stop();
-                Debug.WriteLine($"Finished getting subjects for {courseName} in {(double)watch.ElapsedMilliseconds / 1000}s");
+                await AppLogger.WriteLineAsync($"Finished getting subjects for {courseName} in {(double)watch.ElapsedMilliseconds / 1000}s");
             }
             catch (HttpRequestException hre)
             {
-                Debug.WriteLine(hre.Message);
+                await AppLogger.WriteLineAsync(hre.Message, AppLogger.MessageType.HandledException);
             }
 
             Course course = new(courseName, courseSubjects);
@@ -116,7 +136,7 @@ namespace Scraper
         /// </summary>
         private async Task<Subject> GetSubjectContent(Subject subject, string link)
         {
-            Debug.WriteLine($"\tGetting content for subject: {subject.Name}");
+            await AppLogger.WriteLineAsync($"\tGetting content for subject: {subject.Name}");
             Stopwatch watch = Stopwatch.StartNew();
 
             if (subject.Name == string.Empty && subject.ID == string.Empty)
@@ -154,7 +174,7 @@ namespace Scraper
             subject.Documents = mainSubjectFolder.Documents;
 
             watch.Stop();
-            Debug.WriteLine($"\tFinished collecting content for " +
+            await AppLogger.WriteLineAsync($"\tFinished collecting content for " +
                 $"{subject.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
 
             return subject;

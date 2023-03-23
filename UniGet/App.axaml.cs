@@ -1,6 +1,7 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Logging;
 using Avalonia.Markup.Xaml;
 using FileManagers;
 using Scraper;
@@ -42,16 +43,18 @@ namespace UniGet
 
         private async void DoBeforeAppInit()
         {
+            AppLogger.ClearLog();
+
             if (!Directory.Exists(Shared.ConfigDirectory))
                 Directory.CreateDirectory(Shared.ConfigDirectory);
             try
             {
-                await UpdateCourses();
+                await CheckForCourseNameUpdates();
                 await GetUpdates();
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
+                await AppLogger.WriteLineAsync(ex.Message, AppLogger.MessageType.HandledException);
             }
         }
 
@@ -67,13 +70,6 @@ namespace UniGet
         /// </summary>
         /// <returns></returns>
         // This function is run on initialization ONCE
-        // TODO - UPDATE CHECKS
-        // TODO - UPDATE CHECKS
-        // TODO - UPDATE CHECKS
-        // TODO - UPDATE CHECKS
-        // TODO - UPDATE CHECKS
-        // TODO - UPDATE CHECKS
-        // TODO - UPDATE CHECKS
         public async Task GetUpdates()
         {
             DateTime timeFromLastUpdate = LocalAppSettings.GetInstance().UserStats.LastUpdateTime;
@@ -85,6 +81,8 @@ namespace UniGet
             for (int i = 0; i < courseInfo.Count; i++)
             {
                 var course = JsonManager.ReadCourseFromFile(courseInfo[i].CourseName);
+                if (courseInfo[i].CourseName == "ΑΝΑΚΟΙΝΩΣΕΙΣ")
+                    continue;
                 if (course == null)
                     scheduledCourses.Add(courseInfo[i].CourseName);
             }
@@ -100,18 +98,42 @@ namespace UniGet
                     if (!scheduledCourses.Exists(c => c.Equals(course.Name)))
                         scheduledCourses.Add(course.Name);
                 }
-
-                LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
             }
 
-            await new CourseBuilder().GetCoursesAsync(scheduledCourses);
+            // Do not update check if no courses were downloaded
+            if (scheduledCourses.Count == 0)
+                return;
 
+            // Read 'old' courses from JSON and plop them in a List
+            List<Course> oldCourses = new();
+            for (int i = 0; i < scheduledCourses.Count; i++)
+            {
+                Course course = JsonManager.ReadCourseFromFile(scheduledCourses[i]);
+                oldCourses.Add(course);
+            }
+            List<Course> updatedCourses = await new CourseBuilder().GetCoursesAsync(scheduledCourses);
+
+            // Perform update checks
+            UpdateChecker updateChecker = new();
+            Stopwatch s = Stopwatch.StartNew();
+            for (int i = 0; i < oldCourses.Count; i++)
+            {
+                for (int j = 0; j < oldCourses[i].Subjects.Count; j++)
+                {
+                    DocumentCollection newDocs = 
+                        updateChecker
+                        .GetSubjectUpdates(oldCourses[i].Subjects[j], updatedCourses[i].Subjects[j]);
+                }
+            }
+            s.Stop();
+            await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
+
+            LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
         }
         /// <summary>
         /// Updates every month
         /// </summary>
-        /// <returns></returns>
-        private async Task<List<string>> UpdateCourses()
+        private async Task<List<string>> CheckForCourseNameUpdates()
         {
             string courseNamesPath = $"{Shared.ConfigDirectory}/course_names.json";
             var courseNamesModel = JsonManager.ReadJsonFromFile<CourseNameGetModel>(courseNamesPath);
@@ -126,7 +148,6 @@ namespace UniGet
                 for (int i = 0; i < courses.Count; i++)
                 {
                     courseInfos.Add((courses[i].courseName, courses[i].courseId));
-                    Debug.WriteLine(courseInfos[i]);
                 }
 
                 JsonManager.WriteJsonToFile<CourseNameGetModel>(new()

@@ -9,33 +9,25 @@ namespace Network
     {
         public async Task<byte[]> DownloadAsync(string url, string? fileName = null)
         {
-            var progress = new Progress<SingleDlProgressInfo>();
-            progress.ProgressChanged += DownloadProgressChanged;
-            return await DownloadAndReportAsync(new Uri(url), progress, fileName);
+            return await DownloadAndReportAsync(new Uri(url), fileName);
         }
 
         public async Task<byte[]> DownloadAsync(Uri uri, string? fileName = null)
         {
-            var progress = new Progress<SingleDlProgressInfo>();
-            progress.ProgressChanged += DownloadProgressChanged;
-            return await DownloadAndReportAsync(uri, progress, fileName);
+            return await DownloadAndReportAsync(uri, fileName);
         }
 
         public async Task<string> DownloadStringAsync(string url, string? fileName = null)
         {
-            var progress = new Progress<SingleDlProgressInfo>();
-            progress.ProgressChanged += DownloadProgressChanged;
-            return Encoding.UTF8.GetString(await DownloadAndReportAsync(new Uri(url), progress, fileName));
+            return Encoding.UTF8.GetString(await DownloadAndReportAsync(new Uri(url), fileName));
         }
 
         public async Task<string> DownloadStringAsync(Uri uri, string? fileName = null)
         {
-            var progress = new Progress<SingleDlProgressInfo>();
-            progress.ProgressChanged += DownloadProgressChanged;
-            return Encoding.UTF8.GetString(await DownloadAndReportAsync(uri, progress, fileName));
+            return Encoding.UTF8.GetString(await DownloadAndReportAsync(uri, fileName));
         }
 
-        private async Task<byte[]> DownloadAndReportAsync(Uri uri, IProgress<SingleDlProgressInfo> progress, string? fileName = null)
+        private async Task<byte[]> DownloadAndReportAsync(Uri uri, string? fileName = null)
         {
             const int BUF_SIZE = 1024;
             byte[] bytes;
@@ -53,12 +45,6 @@ namespace Network
                     while ((bytesRead = await stream.ReadAsync(buffer, 0, BUF_SIZE)) > 0)
                     {
                         downloadedBytes += bytesRead;
-                        progress?.Report(new SingleDlProgressInfo()
-                        {
-                            Name = fileName == null ? uri.AbsoluteUri : fileName,
-                            PercentComplete =
-                            (float)downloadedBytes * 100 / (initResponse.Content.Headers.ContentLength ?? 1L)
-                        });
                         await memStream.WriteAsync(buffer);
                     }
                     bytes = memStream.ToArray();

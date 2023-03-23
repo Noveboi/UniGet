@@ -16,7 +16,7 @@ namespace FileManagers
         {
             string fullPath = GetFullFilePath(document, path);
 
-            Debug.WriteLine($"Downloading document {document.Name}.");
+            AppLogger.WriteLine($"Downloading document {document.Name}.");
             Stopwatch watch = Stopwatch.StartNew();
 
             byte[] bytes = await downloader.DownloadAsync(document.DownloadLink, document.Name);
@@ -24,7 +24,7 @@ namespace FileManagers
             File.WriteAllBytes(fullPath, bytes);
 
             watch.Stop();
-            Debug.WriteLine($"Finished downloading {document.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
+            AppLogger.WriteLine($"Finished downloading {document.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
         }
         public string GetFullFilePath(Document document, string cwd)
         {
@@ -39,15 +39,15 @@ namespace FileManagers
         {
             if (File.Exists(fullPath))
             {
-                Debug.WriteLine($"Found existing file at {fullPath}");
+                AppLogger.WriteLine($"Found existing file at {fullPath}");
                 if (File.GetCreationTime(fullPath) < datePublished)
                 {
-                    Debug.WriteLine($"Document at: {fullPath} requires update.");
+                    AppLogger.WriteLine($"Document at: {fullPath} requires update.");
                     return true;
                 }
                 else
                 {
-                    Debug.WriteLine($"The existing file remains unchanged");
+                    AppLogger.WriteLine($"The existing file remains unchanged");
                     return false;
                 }
             }

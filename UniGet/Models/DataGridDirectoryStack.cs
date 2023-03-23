@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FileManagers;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -25,7 +26,7 @@ namespace UniGet.Models
         {
             if (folder.Docs == null)
             {
-                Debug.WriteLine("null Docs given.");
+                AppLogger.WriteLine("null Docs given.");
                 return;
             }
 
