@@ -19,7 +19,7 @@ namespace FileManagers
             AppLogger.WriteLine($"Downloading document {document.Name}.");
             Stopwatch watch = Stopwatch.StartNew();
 
-            byte[] bytes = await downloader.DownloadAsync(document.DownloadLink, document.Name);
+            byte[] bytes = await downloader.DownloadAsync(document.DownloadLink, fileName: document.Name);
 
             File.WriteAllBytes(fullPath, bytes);
 

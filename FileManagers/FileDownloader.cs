@@ -19,19 +19,17 @@ namespace FileManagers
         public async Task DownloadSubjectAsync(Subject subject, DocumentCollection? specificDocuments = null)
         {
             DirectoryStack directoryStack = new DirectoryStack(DirectoryStack.Mode.Write);
-            Progress<MultiDlProgressInfo> progress = new Progress<MultiDlProgressInfo>();
-            progress.ProgressChanged += MultiDownloadProgressChanged;
 
             // Kickstart the process by pushing the main subject folder into the DirectoryStack
             directoryStack.Push(subject.Name, subject.Documents);
 
             if (specificDocuments == null)
-                await GetDocumentsAsync(subject.Documents, directoryStack, progress);
+                await GetDocumentsAsync(subject.Documents, directoryStack);
             else
-                await GetDocumentsAsync(subject.Documents, directoryStack, progress, specificDocuments);
+                await GetDocumentsAsync(subject.Documents, directoryStack, specificDocuments);
         }
 
-        private async Task GetDocumentsAsync(DocumentCollection documents, DirectoryStack directoryStack, IProgress<MultiDlProgressInfo> progress, DocumentCollection? specificDocuments = null)
+        private async Task GetDocumentsAsync(DocumentCollection documents, DirectoryStack directoryStack, DocumentCollection? specificDocuments = null)
         {
             // 0.5 -> Determine the required downloads for progress reporting
             int downloadsScheduled = 0;
@@ -49,8 +47,6 @@ namespace FileManagers
                 }
             }
 
-            var progInfo = new MultiDlProgressInfo() 
-            { DownloadsScheduled = downloadsScheduled, CompletedDownloads = 0 };
 
             // 1 -> Download all the documents and then move on to Folders
 
@@ -64,9 +60,6 @@ namespace FileManagers
                 {
                     if (_fileManager.FileNeedsUpdate(fullPath, file.Date))
                         await _fileManager.DownloadDocumentAsync(file, fullPath);
-                    progInfo.CompletedDownloads++;
-
-                    progress?.Report(progInfo);
                 }
             }
 
@@ -75,17 +68,10 @@ namespace FileManagers
             foreach (Folder folder in documents.Folders)
             {
                 directoryStack.Push(folder.Name, folder.Documents);
-                await GetDocumentsAsync(folder.Documents, directoryStack, progress, specificDocuments);
+                await GetDocumentsAsync(folder.Documents, directoryStack, specificDocuments);
                 directoryStack.Pop();
             }
         }
         #endregion
-        /// <summary>
-        /// Report progress to interested objects
-        /// </summary>
-        private void MultiDownloadProgressChanged(object? sender, MultiDlProgressInfo e)
-        {
-        }
-
     }
 }

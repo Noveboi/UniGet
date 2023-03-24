@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using DynamicData;
 using FileManagers;
+using Network;
 using ReactiveUI;
 using Scraper;
 using System;
@@ -26,6 +27,18 @@ namespace UniGet.ViewModels
         private bool _backButtonVisible;
         // Do NOT confuse this with the FileManagers.DirectoryStack, this stack is used for UI purposes, not file management
         private DataGridDirectoryStack _dirStack = new DataGridDirectoryStack();
+        private string _singleProgText;
+        private string _multiProgText;
+        public string SingleProgText
+        {
+            get => _singleProgText;
+            set => this.RaiseAndSetIfChanged(ref _singleProgText, value);
+        }
+        public string MultiProgText
+        {
+            get => _multiProgText;
+            set => this.RaiseAndSetIfChanged(ref _multiProgText, value);
+        }
         /// <summary>
         /// Displays the subjects in the left-hand side of the <see cref="MainWindow"/>
         /// </summary>
@@ -88,6 +101,8 @@ namespace UniGet.ViewModels
         public MainWindowViewModel()
         {
             _selectedSubject.PropertyChanged += SelectedSubject_Changed;
+            ProgressReporterModel.OngoingProgressAmountChanged += MultiProgressChanged;
+            ProgressReporterModel.ProgressChanged += SingleProgressChanged;
             SubjectsList = SetupSubjectsTree();
         }
 
@@ -146,6 +161,25 @@ namespace UniGet.ViewModels
             }
 
             SelectedSubjectName = _dirStack.GetTitleName();
+        }
+
+        public void SingleProgressChanged(object? sender, SingleProgressInfoEventArgs e)
+        {
+            if (e.DownloadComplete)
+            {
+                SingleProgText = $"Finished downloading {e.Downloadee}";
+            }
+            else
+            {
+                SingleProgText = $"Downloading {e.Downloadee} ({e.Percentage}%)";
+            }
+        }
+        public void MultiProgressChanged(object? sender, MultiProgressInfoEventArgs e)
+        {
+            if (e.OngoingProgCount == 0)
+                MultiProgText = string.Empty;
+            else
+                MultiProgText = $"{e.OngoingProgCount} remaining...";
         }
 
         /// <summary>

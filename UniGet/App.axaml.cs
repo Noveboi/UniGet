@@ -113,22 +113,22 @@ namespace UniGet
             }
             List<Course> updatedCourses = await new CourseBuilder().GetCoursesAsync(scheduledCourses);
 
-            // Perform update checks
-            UpdateChecker updateChecker = new();
-            Stopwatch s = Stopwatch.StartNew();
-            for (int i = 0; i < oldCourses.Count; i++)
-            {
-                for (int j = 0; j < oldCourses[i].Subjects.Count; j++)
-                {
-                    DocumentCollection newDocs = 
-                        updateChecker
-                        .GetSubjectUpdates(oldCourses[i].Subjects[j], updatedCourses[i].Subjects[j]);
-                }
-            }
-            s.Stop();
-            await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
+            //// Perform update checks
+            //UpdateChecker updateChecker = new();
+            //Stopwatch s = Stopwatch.StartNew();
+            //for (int i = 0; i < oldCourses.Count; i++)
+            //{
+            //    for (int j = 0; j < updatedCourses[i].Subjects.Count; j++)
+            //    {
+            //        DocumentCollection newDocs = 
+            //            updateChecker
+            //            .GetSubjectUpdates(oldCourses[i].Subjects[j], updatedCourses[i].Subjects[j]);
+            //    }
+            //}
+            //s.Stop();
+            //await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
 
-            LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
+            //LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
         }
         /// <summary>
         /// Updates every month

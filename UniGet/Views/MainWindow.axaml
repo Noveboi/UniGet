@@ -139,9 +139,13 @@
         </Button>
       </Grid>
     </Grid>
-    <Grid Grid.Row="2" Background="#D63B3B">
-      <TextBlock Text="Progress reporting goes here" Foreground="White"
+    <Grid Grid.Row="2" Background="#D63B3B" ColumnDefinitions="* 150">
+      <TextBlock Text="{Binding SingleProgText}" Foreground="White"
                  HorizontalAlignment="Center" FontSize="12" 
+                 VerticalAlignment="Center"/>
+      <TextBlock Text="{Binding MultiProgText}" Foreground="White"
+                 HorizontalAlignment="Center" FontSize="12"
+                 Grid.Column="1"
                  VerticalAlignment="Center"/>
     </Grid>
   </Grid>
