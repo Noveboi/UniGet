@@ -73,6 +73,12 @@ namespace UniGet.Models.AppSettings
                 
         }
 
+        public void SetNewAppDirectory(string path)
+        {
+            UserConfig.ApplicationDirectory = path;
+            JsonManager.WriteJsonToFile(_instance, _path);
+        }
+
         public void SaveSettings()
         {
             JsonManager.WriteJsonToFile(_instance, _path);

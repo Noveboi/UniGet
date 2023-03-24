@@ -8,29 +8,29 @@ namespace Network
     /// </summary>
     public class Downloader
     {
-        public async Task<byte[]> DownloadAsync(string url, EventHandler<SingleProgressInfoEventArgs> handler = null, string? fileName = null)
+        public async Task<byte[]> DownloadAsync(string url, string? fileName = null)
         {
-            return await DownloadAndReportAsync(new Uri(url), handler, fileName);
+            return await DownloadAndReportAsync(new Uri(url), fileName);
         }
 
-        public async Task<byte[]> DownloadAsync(Uri uri, EventHandler<SingleProgressInfoEventArgs> handler = null, string? fileName = null)
+        public async Task<byte[]> DownloadAsync(Uri uri, string? fileName = null)
         {
-            return await DownloadAndReportAsync(uri, handler, fileName);
+            return await DownloadAndReportAsync(uri, fileName);
         }
 
-        public async Task<string> DownloadStringAsync(string url, EventHandler<SingleProgressInfoEventArgs> handler = null, string? fileName = null)
+        public async Task<string> DownloadStringAsync(string url, string? fileName = null)
         {
-            return Encoding.UTF8.GetString(await DownloadAndReportAsync(new Uri(url), handler, fileName));
+            return Encoding.UTF8.GetString(await DownloadAndReportAsync(new Uri(url), fileName));
         }
 
-        public async Task<string> DownloadStringAsync(Uri uri, EventHandler<SingleProgressInfoEventArgs> handler = null, string? fileName = null)
+        public async Task<string> DownloadStringAsync(Uri uri, string? fileName = null)
         {
-            return Encoding.UTF8.GetString(await DownloadAndReportAsync(uri, handler, fileName));
+            return Encoding.UTF8.GetString(await DownloadAndReportAsync(uri, fileName));
         }
 
-        private async Task<byte[]> DownloadAndReportAsync(Uri uri, EventHandler<SingleProgressInfoEventArgs>? handler, string? fileName = null)
+        private async Task<byte[]> DownloadAndReportAsync(Uri uri, string? fileName = null)
         {
-            const int BUF_SIZE = 1024;
+            const int BUF_SIZE = 512;
             byte[] bytes;
             using (var client = new HttpClient(new HttpClientHandler() { MaxConnectionsPerServer = 1 }))
             {
@@ -62,6 +62,11 @@ namespace Network
                         ProgressReporterModel.ReportProgress(progId, downloadedBytes, false);
                     }
                     bytes = memStream.ToArray();
+
+                    if (bytes.Length < downloadedBytes)
+                    {
+                        throw new Exception("Data missing or corrupted.");
+                    }
                     ProgressReporterModel.ReportProgress(progId, downloadedBytes, true);
                 }
             }

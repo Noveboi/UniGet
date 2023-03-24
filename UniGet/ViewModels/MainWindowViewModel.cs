@@ -108,6 +108,19 @@ namespace UniGet.ViewModels
 
         public async Task DownloadDocAtIndex(object param)
         {
+            // Check if current directory exists
+            if (!Directory.Exists(Shared.ApplicationDirectory))
+            {
+                OpenFolderDialog dialog = new OpenFolderDialog();
+                string? result = await dialog.ShowAsync(MainWindow.Instance);
+
+                if (result != null)
+                {
+                    Shared.ApplicationDirectory = result;
+                    LocalAppSettings.GetInstance().SetNewAppDirectory(result);
+                }
+            }
+
             // SEPARATE BEHAVIOR FOR FILE AND FOLDER
             DocumentDataGridModel doc = (DocumentDataGridModel)param;
             DocumentCollection docsToDownload = new();
@@ -171,7 +184,7 @@ namespace UniGet.ViewModels
             }
             else
             {
-                SingleProgText = $"Downloading {e.Downloadee} ({e.Percentage}%)";
+                SingleProgText = $"Downloading {e.Downloadee} ({e.Percentage:f2}%)";
             }
         }
         public void MultiProgressChanged(object? sender, MultiProgressInfoEventArgs e)

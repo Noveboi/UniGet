@@ -39,7 +39,7 @@ namespace FileManagers
                 Directory.CreateDirectory(fullPath);
         }
         public (string, DocumentCollection) Pop() => _dirStack.Pop();
-        public string GetCwd() => Shared.UniFilesDirectory + "/" + GetPath();
+        public string GetCwd() => Shared.ApplicationDirectory + "/" + GetPath();
         public string GetPath()
         {
             string path = string.Empty;

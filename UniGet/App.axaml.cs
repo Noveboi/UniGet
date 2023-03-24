@@ -43,10 +43,14 @@ namespace UniGet
 
         private async void DoBeforeAppInit()
         {
-            AppLogger.ClearLog();
 
             if (!Directory.Exists(Shared.ConfigDirectory))
                 Directory.CreateDirectory(Shared.ConfigDirectory);
+
+            AppLogger.ClearLog();
+
+            Shared.ApplicationDirectory = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
+
             try
             {
                 await CheckForCourseNameUpdates();
@@ -128,7 +132,7 @@ namespace UniGet
             //s.Stop();
             //await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
 
-            //LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
+            LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
         }
         /// <summary>
         /// Updates every month
