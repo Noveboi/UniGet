@@ -121,7 +121,28 @@ namespace Scraper
             }
             catch (HttpRequestException hre)
             {
-                await AppLogger.WriteLineAsync(hre.Message, AppLogger.MessageType.HandledException);
+                await AppLogger.WriteLineAsync($"Couldn't download page content for course {courseName} at: {courseHref}" +
+                    $". Exception message: {hre.Message}", AppLogger.MessageType.HandledException);
+            }
+            catch (IndexOutOfRangeException ioore)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Index out of range exception for course {courseName}. " +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ioore.Message}", 
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (ArgumentException ae)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Argument exception for course {courseName}." +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ae.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (Exception ex)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Other exception type caught for course {courseName}. Exception message: {ex.Message}",
+                    AppLogger.MessageType.UnhandledException);
             }
 
             Course course = new(courseName, courseSubjects);
@@ -143,35 +164,62 @@ namespace Scraper
                 throw new Exception("Subject is empty");
             if (link == string.Empty)
                 return subject;
-
-            HtmlNode content = await GetPageContent($"{_mainSite}/{link}", "content");
-            string xpath = "div[@class='leftnav']" +
-                "/div[@class='navmenu']" +
-                "/div[@class='navcontainer']" +
-                "/ul[@class='navlist']" +
-                "/li";
-
-            HtmlNodeCollection navListItems = content.SelectNodes(xpath);
-
-            string documentsLink = string.Empty;
-            string announcementsLink = string.Empty;
-
-            foreach (var navListItem in navListItems)
+            try
             {
-                if (navListItem.InnerText.Trim() == "Έγγραφα")
-                {
-                    documentsLink =
-                        navListItem.SelectSingleNode("div/a").GetAttributeValue("href", ATTR_NOT_FOUND);               
-                }
-                if (navListItem.InnerText.Trim() == "Ανακοινώσεις")
-                {
-                    announcementsLink =
-                        navListItem.SelectSingleNode("div/a").GetAttributeValue("href", ATTR_NOT_FOUND);
-                }
-            }
+                HtmlNode content = await GetPageContent($"{_mainSite}/{link}", "content");
+                string xpath = "div[@class='leftnav']" +
+                    "/div[@class='navmenu']" +
+                    "/div[@class='navcontainer']" +
+                    "/ul[@class='navlist']" +
+                    "/li";
 
-            Folder mainSubjectFolder = await GetDocumentsAsync(documentsLink, subject);
-            subject.Documents = mainSubjectFolder.Documents;
+                HtmlNodeCollection navListItems = content.SelectNodes(xpath);
+
+                string documentsLink = string.Empty;
+                string announcementsLink = string.Empty;
+
+                foreach (var navListItem in navListItems)
+                {
+                    if (navListItem.InnerText.Trim() == "Έγγραφα")
+                    {
+                        documentsLink =
+                            navListItem.SelectSingleNode("div/a").GetAttributeValue("href", ATTR_NOT_FOUND);
+                    }
+                    if (navListItem.InnerText.Trim() == "Ανακοινώσεις")
+                    {
+                        announcementsLink =
+                            navListItem.SelectSingleNode("div/a").GetAttributeValue("href", ATTR_NOT_FOUND);
+                    }
+                }
+
+                Folder mainSubjectFolder = await GetDocumentsAsync(documentsLink, subject);
+                subject.Documents = mainSubjectFolder.Documents;
+            }
+            catch (HttpRequestException hre)
+            {
+                await AppLogger.WriteLineAsync($"Couldn't download page content for subject {subject.Name} at: {link}" +
+                $". Exception message: {hre.Message}", AppLogger.MessageType.HandledException);
+            }
+            catch (IndexOutOfRangeException ioore)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Index out of range exception for subject {subject.Name}. " +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ioore.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (ArgumentException ae)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Argument exception for subject {subject.Name}." +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ae.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (Exception ex)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Other exception type caught for subject {subject.Name}. Exception message: {ex.Message}",
+                    AppLogger.MessageType.UnhandledException);
+            }
 
             watch.Stop();
             await AppLogger.WriteLineAsync($"\tFinished collecting content for " +
@@ -185,9 +233,6 @@ namespace Scraper
         /// </summary>
         private async Task<Folder> GetDocumentsAsync(string link, Subject subject, Folder? folder = null)
         {
-            HtmlNode content = await GetPageContent($"{_mainSite}/{link}", "content_main");
-            string xpath = "table[@class='tbl_alt']/tr[@*]";
-
             Folder currentFolder;
 
             //Case where GetDocumentsAsync is called from GetSubjectContent
@@ -200,40 +245,71 @@ namespace Scraper
             {
                 currentFolder = folder;
             }
-
-            HtmlNodeCollection rows = content.SelectNodes(xpath);
-            if (rows == null)
+            try
             {
-                return new Folder("Empty");
+                HtmlNode content = await GetPageContent($"{_mainSite}/{link}", "content_main");
+                string xpath = "table[@class='tbl_alt']/tr[@*]";
+
+                HtmlNodeCollection rows = content.SelectNodes(xpath);
+                if (rows == null)
+                {
+                    throw new Exception($"Document rows null at {link}");
+                }
+
+                foreach (var row in rows)
+                {
+                    HtmlNodeCollection columns = row.SelectNodes("td");
+                    string docType = columns[0].SelectSingleNode("img")
+                        .GetAttributeValue("alt", ATTR_NOT_FOUND).Trim();
+                    string docName = ReplaceSpecialHtmlChars
+                        (columns[1].SelectSingleNode("a").InnerText.Trim());
+                    string docSize = columns[2].InnerText.Trim();
+                    string docDate = columns[3].GetAttributeValue("title", ATTR_NOT_FOUND).Trim();
+                    string docDownload = docDownload = _mainSite + HttpUtility.UrlDecode(ReplaceSpecialHtmlChars
+                            (columns[4].SelectSingleNode("a")
+                            .GetAttributeValue("href", ATTR_NOT_FOUND)));
+
+                    if (!docType.Equals(".dir"))
+                    {
+                        currentFolder.Documents.Files.Add(new Document(
+                            docType, docName, docSize, docDate, docDownload));
+                    }
+                    else
+                    {
+                        Folder childFolder = new Folder(docName, docDate);
+                        string openDir =
+                            ReplaceSpecialHtmlChars(columns[1].SelectSingleNode("a").GetAttributeValue("href", ATTR_NOT_FOUND));
+                        childFolder = await GetDocumentsAsync(openDir, subject, childFolder);
+                        currentFolder.Documents.Folders.Add(childFolder);
+                    }
+                }
+            }
+            catch (HttpRequestException hre)
+            {
+                await AppLogger.WriteLineAsync($"Couldn't download page content for some document at: {link}" +
+                $". Exception message: {hre.Message}", AppLogger.MessageType.HandledException);
+            }
+            catch (IndexOutOfRangeException ioore)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Index out of range exception for document at {link}. " +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ioore.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (ArgumentException ae)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Argument exception for document at {link}." +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ae.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (Exception ex)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Other exception type caught for document at {link}. Exception message: {ex.Message}",
+                    AppLogger.MessageType.UnhandledException);
             }
 
-            foreach (var row in rows)
-            {
-                HtmlNodeCollection columns = row.SelectNodes("td");
-                string docType = columns[0].SelectSingleNode("img")
-                    .GetAttributeValue("alt", ATTR_NOT_FOUND).Trim();
-                string docName = ReplaceSpecialHtmlChars
-                    (columns[1].SelectSingleNode("a").InnerText.Trim());
-                string docSize = columns[2].InnerText.Trim();
-                string docDate = columns[3].GetAttributeValue("title", ATTR_NOT_FOUND).Trim();
-                string docDownload = docDownload = _mainSite + HttpUtility.UrlDecode(ReplaceSpecialHtmlChars
-                        (columns[4].SelectSingleNode("a")
-                        .GetAttributeValue("href", ATTR_NOT_FOUND)));
-
-                if (!docType.Equals(".dir"))
-                {
-                    currentFolder.Documents.Files.Add(new Document(
-                        docType, docName, docSize, docDate, docDownload));
-                }
-                else
-                {
-                    Folder childFolder = new Folder(docName, docDate);
-                    string openDir =
-                        ReplaceSpecialHtmlChars(columns[1].SelectSingleNode("a").GetAttributeValue("href", ATTR_NOT_FOUND));
-                    childFolder = await GetDocumentsAsync(openDir, subject, childFolder);
-                    currentFolder.Documents.Folders.Add(childFolder);
-                }
-            }
             return currentFolder;
         }
 

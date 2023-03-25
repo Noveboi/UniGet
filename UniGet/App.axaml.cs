@@ -30,24 +30,29 @@ namespace UniGet
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
-                DoBeforeAppInit();
+                // Execute update checking and downloading asynchronously, continue working on building and initializing app
+                new Action(async () =>
+                {
+                    await DoBeforeAppInitAsync();
+                })();
+
+                desktop.Exit += Desktop_Exit;
 
                 desktop.MainWindow = new MainWindow
                 {
                     DataContext = new MainWindowViewModel(),
                 };
-                desktop.Exit += Desktop_Exit;
             }
             base.OnFrameworkInitializationCompleted();
         }
 
-        private async void DoBeforeAppInit()
+        private async Task DoBeforeAppInitAsync()
         {
-
             if (!Directory.Exists(Shared.ConfigDirectory))
                 Directory.CreateDirectory(Shared.ConfigDirectory);
 
             AppLogger.ClearLog();
+            AppLogger.WriteLine($"APPLICATION LAUNCHED [{DateTime.Now}]");
 
             Shared.ApplicationDirectory = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
 
@@ -60,13 +65,6 @@ namespace UniGet
             {
                 await AppLogger.WriteLineAsync(ex.Message, AppLogger.MessageType.HandledException);
             }
-        }
-
-        private void Desktop_Exit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
-        {
-            var appSettings = LocalAppSettings.GetInstance();
-            appSettings.UserStats.LastRunTime = DateTime.Now;
-            appSettings.SaveSettings();
         }
 
         /// <summary>
@@ -165,6 +163,13 @@ namespace UniGet
                 courseInfos = courseNamesModel.CourseInfo;
             }
             return courseInfos.Select(course => course.courseName).ToList();
+        }
+
+        private void Desktop_Exit(object? sender, ControlledApplicationLifetimeExitEventArgs e)
+        {
+            var appSettings = LocalAppSettings.GetInstance();
+            appSettings.UserStats.LastRunTime = DateTime.Now;
+            appSettings.SaveSettings();
         }
     }
 }

@@ -30,13 +30,25 @@ namespace FileManagers
 
         public static void ClearLog()
         {
-            using var file = new FileStream(_path, FileMode.Create);
+            try
+            {
+                using var file = new FileStream(_path, FileMode.Open);
+                // if log.txt is > 2MB. Clear it 
+                if (file.Length > 2097152)
+                    file.Write(Array.Empty<byte>(), 0, 0);
+            }
+            catch (FileNotFoundException fnfe)
+            {
+                using var file = new FileStream(_path, FileMode.Create);
+            }
         }
 
         public enum MessageType
         {
             Status,
-            HandledException
+            HandledException,
+            UnhandledException,
+            Error
         }
 
         private static byte[] MakeString(string text, MessageType msgType)
@@ -53,7 +65,15 @@ namespace FileManagers
             }
             else if (msgType == MessageType.HandledException)
             {
-                output += "(HAN_EX)";
+                output += "(HAN_EX) ";
+            }
+            else if (msgType == MessageType.UnhandledException)
+            {
+                output += "(UNH_EX) ";
+            }
+            else if (msgType == MessageType.Error)
+            {
+                output += "(ERROR!) ";
             }
             output += $"[{now.ToString("dd/MM/yyyy HH:mm:ss:fff")}] - ";
             output += text;
