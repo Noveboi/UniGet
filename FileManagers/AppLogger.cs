@@ -33,11 +33,11 @@ namespace FileManagers
             try
             {
                 using var file = new FileStream(_path, FileMode.Open);
-                // if log.txt is > 2MB. Clear it 
-                if (file.Length > 2097152)
-                    file.Write(Array.Empty<byte>(), 0, 0);
+                // if log.txt is > 500KB. Clear it 
+                if (file.Length > 512000)
+                    file.SetLength(0);
             }
-            catch (FileNotFoundException fnfe)
+            catch (FileNotFoundException)
             {
                 using var file = new FileStream(_path, FileMode.Create);
             }

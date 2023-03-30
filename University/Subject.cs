@@ -22,6 +22,7 @@ namespace University
                 return sz;
             }
         }
+        public string SiteLink { get; set; }
         public DocumentCollection Documents { get; set; }
 
         public Subject() => Documents = new DocumentCollection();

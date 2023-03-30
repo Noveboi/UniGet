@@ -121,13 +121,13 @@ namespace UniGet.ViewModels
                 }
             }
 
-            // SEPARATE BEHAVIOR FOR FILE AND FOLDER
+            // If a folder is given for download, and its contents and not the folder itself.
             DocumentDataGridModel doc = (DocumentDataGridModel)param;
             DocumentCollection docsToDownload = new();
 
             if (doc.File.Type == DocType.Dir)
             {
-                docsToDownload.Folders.Add(doc.File as Folder);
+                docsToDownload.Files.Add((doc.File as Folder).ExtractFiles());
             }
             else
             {

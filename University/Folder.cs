@@ -57,6 +57,22 @@ namespace University
 
         public static Folder Empty => new Folder("Empty");
 
+        public List<Document> ExtractFiles()
+        {
+            return ExtractFiles(this);
+        }
+        private List<Document> ExtractFiles(Folder folder)
+        {
+            List<Document> docs = new List<Document>();
+            docs.AddRange(folder.Documents.Files);
+            for (int i = 0; i < folder.Documents.Folders.Count; i++)
+            {
+                docs.AddRange(ExtractFiles(folder.Documents.Folders[i]));
+            }
+
+            return docs;
+        }
+
         public string DownloadLink => string.Empty;
 
         public bool IsEmpty() => Documents.BaseCount == 0;

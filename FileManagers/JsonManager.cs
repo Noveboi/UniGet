@@ -2,6 +2,8 @@
 using Newtonsoft.Json;
 using University;
 using System.Diagnostics;
+using Newtonsoft.Json.Linq;
+using System.Runtime.Intrinsics.X86;
 
 namespace FileManagers
 {
@@ -15,23 +17,11 @@ namespace FileManagers
         {
             WriteJsonToFile(course, $"{Shared.ConfigDirectory}/{course.Name}.json");
         }
-
-        public static void WriteSubscriptionsToFile(Subscriptions subs)
-        {
-            WriteJsonToFile(subs, _configFilePath);
-        }
-
-        public static Course ReadCourseFromFile(string courseName)
+        public static Course? ReadCourseFromFile(string courseName)
         {
             return ReadJsonFromFile<Course>($"{Shared.ConfigDirectory}/{courseName}.json");
         }
-
-        public static Subscriptions ReadSubscriptionsFromFile()
-        {
-            return ReadJsonFromFile<Subscriptions>(_configFilePath);
-        }
-
-        public static T ReadJsonFromFile<T>(string filePath)
+        public static T? ReadJsonFromFile<T>(string filePath)
         {
             Stopwatch watch = Stopwatch.StartNew();
             AppLogger.WriteLine($"Starting reading JSON from {filePath}.");

@@ -52,7 +52,7 @@ namespace UniGet
                 Directory.CreateDirectory(Shared.ConfigDirectory);
 
             AppLogger.ClearLog();
-            AppLogger.WriteLine($"APPLICATION LAUNCHED [{DateTime.Now}]");
+            await AppLogger.WriteLineAsync($"APPLICATION LAUNCHED [{DateTime.Now}]");
 
             Shared.ApplicationDirectory = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
 
@@ -77,6 +77,7 @@ namespace UniGet
             DateTime timeFromLastUpdate = LocalAppSettings.GetInstance().UserStats.LastUpdateTime;
             List<Subject> subs = LocalAppSettings.GetInstance().UserConfig.Subscriptions;
             List<string> scheduledCourses = new();
+            bool updated = false;
 
             // Check if any course files are empty
             var courseInfo = CourseNameGetModel.Get().CourseInfo;
@@ -89,49 +90,46 @@ namespace UniGet
                     scheduledCourses.Add(courseInfo[i].CourseName);
             }
 
-            // Check if 12 hours have passed
+            // Download courses that have empty JSON files
+            List<Course> downloadedCourses = await new CourseBuilder().GetCoursesAsync(scheduledCourses);
+
+            if (downloadedCourses.Count > 0)
+                updated = true;
+
             if (timeFromLastUpdate.AddHours(12) <= DateTime.Now)
             {
-                foreach (var sub in subs)
+                List<Subject> updatedSubs = new();
+                List<Task<Subject>> downloadTasks = new();
+                CourseBuilder builder = new();
+                for (int i = 0; i < subs.Count; i++)
                 {
-                    var subjectCourseId = sub.ID.Substring(0, 3);
-                    var courseName = courseInfo.Find(course => course.CourseID.Equals(subjectCourseId)).CourseName;
-                    var course = JsonManager.ReadCourseFromFile(courseName);
-                    if (!scheduledCourses.Exists(c => c.Equals(course.Name)))
-                        scheduledCourses.Add(course.Name);
+                    if (downloadedCourses.Any(course => course.Subjects.Contains(subs[i]))) continue;
+                    downloadTasks.Add(builder.GetSubjectContent(subs[i]));
                 }
+
+                // Download all subjects in pararrel
+                await Task.WhenAll(downloadTasks);
+                downloadTasks.ForEach(task => updatedSubs.Add(task.Result));
+
+                LocalAppSettings.GetInstance().UserConfig.Subscriptions = updatedSubs;
+                LocalAppSettings.GetInstance().SaveSettings();
+
+                // Perform update checks
+                Stopwatch s = Stopwatch.StartNew();
+                List<DocumentCollection> subUpdates = new();
+                for (int i = 0; i < updatedSubs.Count; i++)
+                {
+                    subUpdates.Add(new UpdateChecker().GetSubjectUpdates(subs[i], updatedSubs[i]));
+                }
+                s.Stop();
+                await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
+                updated = true;
             }
 
-            // Do not update check if no courses were downloaded
-            if (scheduledCourses.Count == 0)
-                return;
-
-            // Read 'old' courses from JSON and plop them in a List
-            List<Course> oldCourses = new();
-            for (int i = 0; i < scheduledCourses.Count; i++)
-            {
-                Course course = JsonManager.ReadCourseFromFile(scheduledCourses[i]);
-                oldCourses.Add(course);
-            }
-            List<Course> updatedCourses = await new CourseBuilder().GetCoursesAsync(scheduledCourses);
-
-            //// Perform update checks
-            //UpdateChecker updateChecker = new();
-            //Stopwatch s = Stopwatch.StartNew();
-            //for (int i = 0; i < oldCourses.Count; i++)
-            //{
-            //    for (int j = 0; j < updatedCourses[i].Subjects.Count; j++)
-            //    {
-            //        DocumentCollection newDocs = 
-            //            updateChecker
-            //            .GetSubjectUpdates(oldCourses[i].Subjects[j], updatedCourses[i].Subjects[j]);
-            //    }
-            //}
-            //s.Stop();
-            //await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
-
-            LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
+            if (updated)
+                LocalAppSettings.GetInstance().UserStats.LastUpdateTime = DateTime.Now;
         }
+
         /// <summary>
         /// Updates every month
         /// </summary>

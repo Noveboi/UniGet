@@ -108,7 +108,8 @@ namespace Scraper
                     {
                         Name = subjectName,
                         ID = subjectId,
-                        Locked = subjectLink.Equals(string.Empty) ? true : false
+                        Locked = subjectLink.Equals(string.Empty) ? true : false,
+                        SiteLink = subjectLink
                     };
 
                     tasks.Add(GetSubjectContent(subject, subjectLink));
@@ -192,7 +193,7 @@ namespace Scraper
                     }
                 }
 
-                Folder mainSubjectFolder = await GetDocumentsAsync(documentsLink, subject);
+                Folder mainSubjectFolder = await GetDocumentsAsync(subject, documentsLink);
                 subject.Documents = mainSubjectFolder.Documents;
             }
             catch (HttpRequestException hre)
@@ -229,9 +230,86 @@ namespace Scraper
         }
 
         /// <summary>
+        /// Get Documents, Announcements that are associated with the given subject and add them 
+        /// to the subject's properties
+        /// </summary>
+        public async Task<Subject> GetSubjectContent(Subject subject)
+        {
+            await AppLogger.WriteLineAsync($"\tGetting content for subject: {subject.Name}");
+            Stopwatch watch = Stopwatch.StartNew();
+
+            if (subject.Name == string.Empty && subject.ID == string.Empty)
+                throw new Exception("Subject is empty");
+            if (subject.SiteLink == string.Empty)
+                return subject;
+            try
+            {
+                HtmlNode content = await GetPageContent($"{_mainSite}/{subject.SiteLink}", "content");
+                string xpath = "div[@class='leftnav']" +
+                    "/div[@class='navmenu']" +
+                    "/div[@class='navcontainer']" +
+                    "/ul[@class='navlist']" +
+                    "/li";
+
+                HtmlNodeCollection navListItems = content.SelectNodes(xpath);
+
+                string documentsLink = string.Empty;
+                string announcementsLink = string.Empty;
+
+                foreach (var navListItem in navListItems)
+                {
+                    if (navListItem.InnerText.Trim() == "Έγγραφα")
+                    {
+                        documentsLink =
+                            navListItem.SelectSingleNode("div/a").GetAttributeValue("href", ATTR_NOT_FOUND);
+                    }
+                    if (navListItem.InnerText.Trim() == "Ανακοινώσεις")
+                    {
+                        announcementsLink =
+                            navListItem.SelectSingleNode("div/a").GetAttributeValue("href", ATTR_NOT_FOUND);
+                    }
+                }
+
+                Folder mainSubjectFolder = await GetDocumentsAsync(subject, documentsLink);
+                subject.Documents = mainSubjectFolder.Documents;
+            }
+            catch (HttpRequestException hre)
+            {
+                await AppLogger.WriteLineAsync($"Couldn't download page content for subject {subject.Name} at: {subject.SiteLink}" +
+                $". Exception message: {hre.Message}", AppLogger.MessageType.HandledException);
+            }
+            catch (IndexOutOfRangeException ioore)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Index out of range exception for subject {subject.Name}. " +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ioore.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (ArgumentException ae)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Argument exception for subject {subject.Name}." +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {ae.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (Exception ex)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Other exception type caught for subject {subject.Name}. Exception message: {ex.Message}",
+                    AppLogger.MessageType.UnhandledException);
+            }
+
+            watch.Stop();
+            await AppLogger.WriteLineAsync($"\tFinished collecting content for " +
+                $"{subject.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
+
+            return subject;
+        }
+
+        /// <summary>
         /// Get all the documents associated with a subject 
         /// </summary>
-        private async Task<Folder> GetDocumentsAsync(string link, Subject subject, Folder? folder = null)
+        private async Task<Folder> GetDocumentsAsync(Subject subject, string docLink, Folder? folder = null)
         {
             Folder currentFolder;
 
@@ -247,13 +325,13 @@ namespace Scraper
             }
             try
             {
-                HtmlNode content = await GetPageContent($"{_mainSite}/{link}", "content_main");
+                HtmlNode content = await GetPageContent($"{_mainSite}/{docLink}", "content_main");
                 string xpath = "table[@class='tbl_alt']/tr[@*]";
 
                 HtmlNodeCollection rows = content.SelectNodes(xpath);
                 if (rows == null)
                 {
-                    throw new Exception($"Document rows null at {link}");
+                    throw new Exception($"Document rows null at {docLink}");
                 }
 
                 foreach (var row in rows)
@@ -279,34 +357,34 @@ namespace Scraper
                         Folder childFolder = new Folder(docName, docDate);
                         string openDir =
                             ReplaceSpecialHtmlChars(columns[1].SelectSingleNode("a").GetAttributeValue("href", ATTR_NOT_FOUND));
-                        childFolder = await GetDocumentsAsync(openDir, subject, childFolder);
+                        childFolder = await GetDocumentsAsync(subject, openDir, childFolder);
                         currentFolder.Documents.Folders.Add(childFolder);
                     }
                 }
             }
             catch (HttpRequestException hre)
             {
-                await AppLogger.WriteLineAsync($"Couldn't download page content for some document at: {link}" +
+                await AppLogger.WriteLineAsync($"Couldn't download page content for some document at: {docLink}" +
                 $". Exception message: {hre.Message}", AppLogger.MessageType.HandledException);
             }
             catch (IndexOutOfRangeException ioore)
             {
                 await AppLogger.WriteLineAsync
-                    ($"Index out of range exception for document at {link}. " +
+                    ($"Index out of range exception for document at {docLink}. " +
                     $"Most likely, there is missing data due to bad internet connection. Exception message: {ioore.Message}",
                     AppLogger.MessageType.HandledException);
             }
             catch (ArgumentException ae)
             {
                 await AppLogger.WriteLineAsync
-                    ($"Argument exception for document at {link}." +
+                    ($"Argument exception for document at {docLink}." +
                     $"Most likely, there is missing data due to bad internet connection. Exception message: {ae.Message}",
                     AppLogger.MessageType.HandledException);
             }
             catch (Exception ex)
             {
                 await AppLogger.WriteLineAsync
-                    ($"Other exception type caught for document at {link}. Exception message: {ex.Message}",
+                    ($"Other exception type caught for document at {docLink}. Exception message: {ex.Message}",
                     AppLogger.MessageType.UnhandledException);
             }
 
@@ -367,7 +445,7 @@ namespace Scraper
         private async Task<HtmlNode> GetPageContent(string fullUrl, string div)
         {
             Uri uri = new Uri(fullUrl);
-            Downloader dl = new Downloader();
+            ClientDownloader dl = new ClientDownloader();
             string html = await dl.DownloadStringAsync(uri);
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);

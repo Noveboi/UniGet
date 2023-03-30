@@ -6,7 +6,7 @@ namespace FileManagers
 {
     internal class FileManager : IFileManager
     {
-        Downloader downloader;
+        ClientDownloader downloader;
         public FileManager()
         {
             downloader = new();
