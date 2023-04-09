@@ -22,6 +22,8 @@ namespace FileManagers
 
             // Kickstart the process by pushing the main subject folder into the DirectoryStack
             directoryStack.Push(subject.Name, subject.Documents);
+            string fullPath = directoryStack.GetCwd();
+            Directory.CreateDirectory(fullPath);
 
             if (specificDocuments == null)
                 await GetDocumentsAsync(subject.Documents, directoryStack);
@@ -52,14 +54,19 @@ namespace FileManagers
 
             foreach (Document file in documents.Files)
             {
-                string fullPath = _fileManager.GetFullFilePath(file, directoryStack.GetCwd());
+                string dirPath = directoryStack.GetCwd();
+                string fullPath = _fileManager.GetFullFilePath(file, dirPath);
 
                 if ((specificDocuments != null
                     && specificDocuments.Files.Contains(file))
                     || specificDocuments == null)
                 {
                     if (_fileManager.FileNeedsUpdate(fullPath, file.Date))
+                    {
+                        // Create the directory if it doesn't exist
+                        Directory.CreateDirectory(dirPath);
                         await _fileManager.DownloadDocumentAsync(file, fullPath);
+                    }
                 }
             }
 

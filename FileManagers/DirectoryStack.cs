@@ -34,9 +34,6 @@ namespace FileManagers
         {
             _dirStack.Push((directoryName, documents));
             string fullPath = GetCwd();
-            if (_mode == Mode.Write)
-                // Creates a directory only if it doesn't already exist!
-                Directory.CreateDirectory(fullPath);
         }
         public (string, DocumentCollection) Pop() => _dirStack.Pop();
         public string GetCwd() => Shared.ApplicationDirectory + "/" + GetPath();

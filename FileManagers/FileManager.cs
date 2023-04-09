@@ -22,7 +22,7 @@ namespace FileManagers
             byte[] bytes = await downloader.DownloadAsync(document.DownloadLink, fileName: document.Name);
 
             File.WriteAllBytes(fullPath, bytes);
-
+            
             watch.Stop();
             AppLogger.WriteLine($"Finished downloading {document.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
         }
