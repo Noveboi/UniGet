@@ -68,6 +68,12 @@ namespace University
                     return DocType.Doc;
                 case "mp3":
                     return DocType.Mp3;
+                case "jpg":
+                    return DocType.Jpg;
+                case "jpeg":
+                    return DocType.Jpeg;
+                case "png":
+                    return DocType.Png;
                 default:
                     return DocType.Unknown;
             }

@@ -33,8 +33,8 @@ namespace FileManagers
             try
             {
                 using var file = new FileStream(_path, FileMode.Open);
-                // if log.txt is > 500KB. Clear it 
-                if (file.Length > 512000)
+                // if log.txt is > 75KB. Clear it 
+                if (file.Length > 76386)
                     file.SetLength(0);
             }
             catch (FileNotFoundException)

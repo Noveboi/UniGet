@@ -1,5 +1,8 @@
 ﻿using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
+using System;
 
 namespace Network
 {
@@ -8,7 +11,15 @@ namespace Network
     /// </summary>
     public class ClientDownloader
     {
-        private static HttpClient _client = new() { Timeout = Timeout.InfiniteTimeSpan };
+        private static HttpClientHandler _handler = new()
+        {
+            UseDefaultCredentials = true,
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 10,
+            AutomaticDecompression = DecompressionMethods.GZip
+        };
+        private static HttpClient _client = new(_handler) { Timeout = Timeout.InfiniteTimeSpan };
+
         public async Task<byte[]> DownloadAsync(string url, string? fileName = null)
         {
             return await DownloadAndReportAsync(new Uri(url), fileName);
@@ -31,47 +42,59 @@ namespace Network
 
         private async Task<byte[]> DownloadAndReportAsync(Uri uri, string? fileName = null)
         {
-            const int BUF_SIZE = 512;
-            byte[] bytes;
-
-            using HttpResponseMessage response = await _client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
-
-            byte[] buffer = new byte[BUF_SIZE];
+            const int BUF_SIZE = 2048;
             long downloadedBytes = 0;
             string progId;
 
+            // Initially get the headers of the page specified at URI, and read the Content-Length header 
+            HttpResponseMessage response = await _client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+
             long totalBytes = response.Content.Headers.ContentLength ?? -1L;
 
+            // Register a new progress model for the page to be downloaded
             try
             {
                 progId = uri.AbsoluteUri;
                 ProgressReporterModel.RegisterProgress(uri.AbsoluteUri, totalBytes);
-            } 
+            }
             catch (ArgumentException)
             {
                 progId = uri.GetHashCode().ToString();
                 ProgressReporterModel.RegisterProgress(uri.AbsoluteUri, totalBytes, progId);
             }
 
-            using (var memStream = new MemoryStream())
-            using (var stream = await response.Content.ReadAsStreamAsync())
+            // Create a MemoryStream for writing the received data into a byte array
+            using var memStream = new MemoryStream(BUF_SIZE);
+            // Read the content of the response into a Stream
+            using Stream responseStream = await response.Content.ReadAsStreamAsync();
+
+            byte[] buffer = new byte[BUF_SIZE];
+            long bytesRead = 0;
+
+            // try - finally is for proper disposal of the responseStream
+            try
             {
-                long bytesRead = 0;
-                while ((bytesRead = await stream.ReadAsync(buffer, 0, BUF_SIZE)) > 0)
+                // Read the received responseStream in chunks. This is for the purposes of reporting the progress made 
+                // on the downloading
+                while ((bytesRead = await responseStream.ReadAsync(buffer.AsMemory(0, BUF_SIZE))) > 0)
                 {
                     downloadedBytes += bytesRead;
-                    await memStream.WriteAsync(buffer);
+                    byte[] bufferCopy = new byte[bytesRead];
+                    Buffer.BlockCopy(buffer, 0, bufferCopy, 0, (int)bytesRead);
+                    await memStream.WriteAsync(bufferCopy);
                     ProgressReporterModel.ReportProgress(progId, downloadedBytes, false);
                 }
-                bytes = memStream.ToArray();
-
-                if (totalBytes > downloadedBytes)
-                {
-                    throw new Exception($"Data missing or corrupted. Got {downloadedBytes} out of {bytes.Length} at URL {uri.AbsoluteUri}");
-                }
-                ProgressReporterModel.ReportProgress(progId, downloadedBytes, true);
             }
-            return bytes;
+            finally
+            {
+                responseStream.Dispose();
+            }
+            response.Dispose();
+
+            //bytes = await response.Content.ReadAsByteArrayAsync();
+
+            ProgressReporterModel.ReportProgress(progId, downloadedBytes, true);
+            return memStream.ToArray();
 
         }
     }

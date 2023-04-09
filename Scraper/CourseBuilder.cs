@@ -374,11 +374,18 @@ namespace Scraper
                     $"Most likely, there is missing data due to bad internet connection. Exception message: {ioore.Message}",
                     AppLogger.MessageType.HandledException);
             }
-            catch (ArgumentException ae)
+            catch (ArgumentOutOfRangeException ae)
             {
                 await AppLogger.WriteLineAsync
                     ($"Argument exception for document at {docLink}." +
                     $"Most likely, there is missing data due to bad internet connection. Exception message: {ae.Message}",
+                    AppLogger.MessageType.HandledException);
+            }
+            catch (NullReferenceException nre)
+            {
+                await AppLogger.WriteLineAsync
+                    ($"Null reference exception for document at {docLink}." +
+                    $"Most likely, there is missing data due to bad internet connection. Exception message: {nre.Message}",
                     AppLogger.MessageType.HandledException);
             }
             catch (Exception ex)
