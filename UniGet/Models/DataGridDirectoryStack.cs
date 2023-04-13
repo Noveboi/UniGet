@@ -67,7 +67,7 @@ namespace UniGet.Models
             return _dirStack.Peek();
         }
 
-        public string GetTitleName()
+        public string GetTitleString()
         {
             string title = string.Empty;
             string[] dirNamesCopy = new string[_dirNames.Count];

@@ -75,7 +75,8 @@ namespace UniGet
         public async Task GetUpdates()
         {
             DateTime timeFromLastUpdate = LocalAppSettings.GetInstance().UserStats.LastUpdateTime;
-            List<Subject> subs = LocalAppSettings.GetInstance().UserConfig.Subscriptions;
+            // ToList() in order to create a copy of subscriptions and to not have subs be a reference to subscriptions
+            List<Subject> subs = LocalAppSettings.GetInstance().UserConfig.Subscriptions.ToList();
             List<string> scheduledCourses = new();
             bool updated = false;
 
@@ -96,6 +97,7 @@ namespace UniGet
             if (downloadedCourses.Count > 0)
                 updated = true;
 
+            // Download subscribed subjects if 12 or more hours have passed since the last update
             if (timeFromLastUpdate.AddHours(12) <= DateTime.Now)
             {
                 List<Subject> updatedSubs = new();
@@ -103,16 +105,18 @@ namespace UniGet
                 CourseBuilder builder = new();
                 for (int i = 0; i < subs.Count; i++)
                 {
-                    if (downloadedCourses.Any(course => course.Subjects.Contains(subs[i]))) continue;
-                    downloadTasks.Add(builder.GetSubjectContent(subs[i]));
+                    if (downloadedCourses.Any(course => course.Subjects.Contains(subs[i])))
+                    {
+                        continue;
+                    }
+                    // Instantiates a new Subject because GetSubjectContent modifies the subject that is passed in the arguments.
+                    // We want to retain the old subject information for the UpdateChecker to do its job.
+                    downloadTasks.Add(builder.GetSubjectContent(new Subject(subs[i])));
                 }
 
-                // Download all subjects in pararrel
+                // Download all subjects in parallel
                 await Task.WhenAll(downloadTasks);
                 downloadTasks.ForEach(task => updatedSubs.Add(task.Result));
-
-                LocalAppSettings.GetInstance().UserConfig.Subscriptions = updatedSubs;
-                LocalAppSettings.GetInstance().SaveSettings();
 
                 // Perform update checks
                 Stopwatch s = Stopwatch.StartNew();
@@ -123,6 +127,10 @@ namespace UniGet
                 }
                 s.Stop();
                 await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
+
+                LocalAppSettings.GetInstance().UserConfig.Subscriptions = updatedSubs;
+                LocalAppSettings.GetInstance().SaveSettings();
+
                 updated = true;
             }
 

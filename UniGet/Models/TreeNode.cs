@@ -21,7 +21,7 @@ namespace UniGet.Models
         public TreeNode(string Name)
         {
             this.Name = Name;
-            this.Children = new ObservableCollection<TreeNode>();
+            Children = new ObservableCollection<TreeNode>();
         }
     }
 }

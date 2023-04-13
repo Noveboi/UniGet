@@ -26,7 +26,18 @@ namespace University
         public DocumentCollection Documents { get; set; }
 
         public Subject() => Documents = new DocumentCollection();
-
+        
+        /// <summary>
+        /// Creates a copy of the <see cref="Subject"/> passed as an argument
+        /// </summary>
+        public Subject(Subject subjectToCopy)
+        {
+            Name = subjectToCopy.Name;
+            ID = subjectToCopy.ID;
+            Locked = subjectToCopy.Locked;
+            SiteLink = subjectToCopy.SiteLink;
+            Documents = subjectToCopy.Documents;
+        }
 
         public override string ToString()
         {

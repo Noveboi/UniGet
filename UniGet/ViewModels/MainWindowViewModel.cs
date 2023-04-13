@@ -82,7 +82,7 @@ namespace UniGet.ViewModels
                     SubjectDocs.Clear();
                     SubjectDocs.AddRange(newSelectedDoc.Docs);
                     _dirStack.Push(newSelectedDoc);
-                    SelectedSubjectName = _dirStack.GetTitleName();
+                    SelectedSubjectName = _dirStack.GetTitleString();
 
                     if (_dirStack.Count > 1)
                     {
@@ -106,6 +106,11 @@ namespace UniGet.ViewModels
             SubjectsList = SetupSubjectsTree();
         }
 
+        /// <summary>
+        /// Called when user clicks the "Download" button in the DataGrid
+        /// </summary>
+        /// <param name="param"></param>
+        /// <returns></returns>
         public async Task DownloadDocAtIndex(object param)
         {
             // Check if current directory exists
@@ -134,7 +139,7 @@ namespace UniGet.ViewModels
                 docsToDownload.Files.Add(doc.File as Document);
             }
 
-            FileDownloader fd = new FileDownloader();
+            FileDownloader fd = new();
             await fd.DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
         }
 
@@ -161,7 +166,14 @@ namespace UniGet.ViewModels
             _dirStack.PopUntilSubject();
             BackButtonVisible = false;
 
-            if (sender == null) return;
+            if (sender == null)
+            { 
+                return; 
+            }
+
+            // Problem: in App.axaml.cs, the downloading, update checking, etc... is async. The problem lies in the fact that SubjectNodess
+            // is initialized once BEFORE update checking is done and therefore any new documents are NOT displayed on the screen
+
             SubjectNode subjectNode = ((TreeViewItemViewModel)sender).Node;
 
             if (subjectNode.Documents != null)
@@ -173,7 +185,7 @@ namespace UniGet.ViewModels
                 _dirStack.Push(subjectNode);
             }
 
-            SelectedSubjectName = _dirStack.GetTitleName();
+            SelectedSubjectName = _dirStack.GetTitleString();
         }
 
         public void SingleProgressChanged(object? sender, SingleProgressInfoEventArgs e)
@@ -226,7 +238,7 @@ namespace UniGet.ViewModels
                 return;
             }
             _dirStack.Pop();
-            SelectedSubjectName = _dirStack.GetTitleName();
+            SelectedSubjectName = _dirStack.GetTitleString();
 
             SubjectDocs.Clear();
             SubjectDocs.AddRange(_dirStack.Peek());
