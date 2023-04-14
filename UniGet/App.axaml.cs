@@ -21,6 +21,8 @@ namespace UniGet
 {
     public partial class App : Application
     {
+        public event EventHandler<UpdateCompleteEventArgs>? UpdateComplete;
+
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -52,14 +54,15 @@ namespace UniGet
                 Directory.CreateDirectory(Shared.ConfigDirectory);
 
             AppLogger.ClearLog();
-            await AppLogger.WriteLineAsync($"APPLICATION LAUNCHED [{DateTime.Now}]");
+            await AppLogger.WriteLineAsync($"APPLICATION LAUNCHED");
+
 
             Shared.ApplicationDirectory = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
-
             try
             {
                 await CheckForCourseNameUpdates();
                 await GetUpdates();
+                
             }
             catch (Exception ex)
             {
@@ -109,7 +112,7 @@ namespace UniGet
                     {
                         continue;
                     }
-                    // Instantiates a new Subject because GetSubjectContent modifies the subject that is passed in the arguments.
+                    // Instantiates a new Subject because GetSubjectContent modifies the Subject object that is passed in the arguments.
                     // We want to retain the old subject information for the UpdateChecker to do its job.
                     downloadTasks.Add(builder.GetSubjectContent(new Subject(subs[i])));
                 }
@@ -120,10 +123,10 @@ namespace UniGet
 
                 // Perform update checks
                 Stopwatch s = Stopwatch.StartNew();
-                List<DocumentCollection> subUpdates = new();
+                Dictionary<string, DocumentCollection> subUpdates = new();
                 for (int i = 0; i < updatedSubs.Count; i++)
                 {
-                    subUpdates.Add(new UpdateChecker().GetSubjectUpdates(subs[i], updatedSubs[i]));
+                    subUpdates.Add(subs[i].ID ,new UpdateChecker().GetSubjectUpdates(subs[i], updatedSubs[i]));
                 }
                 s.Stop();
                 await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
@@ -176,6 +179,8 @@ namespace UniGet
             var appSettings = LocalAppSettings.GetInstance();
             appSettings.UserStats.LastRunTime = DateTime.Now;
             appSettings.SaveSettings();
+
+            AppLogger.WriteLine($"CONTROLLED APPLICATION EXIT (CODE {e.ApplicationExitCode})");
         }
     }
 }
