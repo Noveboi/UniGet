@@ -104,6 +104,26 @@ namespace UniGet.ViewModels
             ProgressReporterModel.OngoingProgressAmountChanged += MultiProgressChanged;
             ProgressReporterModel.ProgressChanged += SingleProgressChanged;
             SubjectsList = SetupSubjectsTree();
+
+            AppEventAggregator.Subscribe<UpdateCompleteEvent>(HandleUpdateComplete);
+        }
+
+        /// <summary>
+        /// When App.xaml.cs finishes update checking, receive the updated documents foreach subject and display: 
+        ///   The number of updated documents for each subject and
+        ///   the updated documents on a small DataGrid for quick access
+        /// </summary>
+        private void HandleUpdateComplete(UpdateCompleteEvent updateCompleteEvent)
+        {
+            var allUpdatedDocuments = updateCompleteEvent.updateDocuments;
+            foreach (KeyValuePair<Subject, DocumentCollection> pair in allUpdatedDocuments)
+            {
+                SubjectNode updatedNode = new SubjectNode(pair.Key)
+                {
+                    Updates = pair.Value
+                };
+                SubjectsList.Replace(FindSubjectInList(pair.Key), updatedNode);
+            }
         }
 
         /// <summary>
@@ -228,6 +248,17 @@ namespace UniGet.ViewModels
             }
 
             return root;
+        }
+
+        private SubjectNode? FindSubjectInList(Subject subject)
+        {
+            for (int i = 0; i < SubjectsList.Count; i++)
+            {
+                if (SubjectsList[i].Subject.Equals(subject))
+                    return SubjectsList[i];
+            }
+
+            return null;
         }
 
         public void GoToPreviousDirectory()

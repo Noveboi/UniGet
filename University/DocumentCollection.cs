@@ -28,7 +28,8 @@ namespace University
         /// <summary>
         /// Gets the count of the files and folders recursively 
         /// </summary>
-        public int FullCount() => Count(this);
+        [JsonIgnore]
+        public int FullCount => Count(this);
 
         public DocumentCollection()
         {

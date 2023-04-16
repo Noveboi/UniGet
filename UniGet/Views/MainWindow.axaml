@@ -82,14 +82,34 @@
 <!--///////MAIN SECTION///////-->
       <!-- Subjects List-->
       <Grid Grid.Row="1" Grid.Column="0" RowDefinitions="* 50">
-        <TreeView Items="{Binding SubjectsList}" 
-                  SelectedItem="{Binding SelectedSubject}">
-          <TreeView.ItemTemplate>
-            <TreeDataTemplate>
-              <TextBlock Text="{Binding Subject.Name}"/>
-            </TreeDataTemplate>
-          </TreeView.ItemTemplate>
-        </TreeView>
+        <Grid ColumnDefinitions="* Auto">
+          <!-- Subjects Names TreeView-->
+          <TreeView Items="{Binding SubjectsList}" 
+                    SelectedItem="{Binding SelectedSubject}"
+                    Grid.Column="0">
+            <TreeView.ItemTemplate>
+              <TreeDataTemplate>
+                  <TextBlock Text="{Binding Subject.Name}" TextWrapping="NoWrap"/>
+              </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+          <!-- Subject Doc Updates TreeView-->
+          <ItemsControl Items="{Binding SubjectsList}"
+                   Grid.Column="1" Background="Transparent">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid Width="32" Height="32">
+                  <Ellipse Width="20" Height="20" IsVisible="{Binding HasUpdates}"
+                           Fill="HotPink" HorizontalAlignment="Center"/>
+                  <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasUpdates}"
+                             Text="{Binding Updates.FullCount}" 
+                             Foreground="White" FontSize="11"></TextBlock>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+        </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="* *">
           <Button Name="addSubjectButton" 
                   Content="+" Grid.Column="0"

@@ -72,6 +72,7 @@ namespace FileManagers
         {
             serializer.DateFormatString = "dd-MM-yyyy HH:mm:ss";
             serializer.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
+            serializer.Formatting = Formatting.Indented;
         }
     }
 }

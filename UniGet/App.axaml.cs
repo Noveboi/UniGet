@@ -21,7 +21,7 @@ namespace UniGet
 {
     public partial class App : Application
     {
-        public event EventHandler<UpdateCompleteEventArgs>? UpdateComplete;
+        public event EventHandler<UpdateCompleteEvent>? UpdateComplete;
 
         public override void Initialize()
         {
@@ -55,7 +55,6 @@ namespace UniGet
 
             AppLogger.ClearLog();
             await AppLogger.WriteLineAsync($"APPLICATION LAUNCHED");
-
 
             Shared.ApplicationDirectory = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
             try
@@ -123,10 +122,10 @@ namespace UniGet
 
                 // Perform update checks
                 Stopwatch s = Stopwatch.StartNew();
-                Dictionary<string, DocumentCollection> subUpdates = new();
+                Dictionary<Subject, DocumentCollection> subUpdates = new();
                 for (int i = 0; i < updatedSubs.Count; i++)
                 {
-                    subUpdates.Add(subs[i].ID ,new UpdateChecker().GetSubjectUpdates(subs[i], updatedSubs[i]));
+                    subUpdates.Add(subs[i], new UpdateChecker().GetSubjectUpdates(subs[i], updatedSubs[i]));
                 }
                 s.Stop();
                 await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");
@@ -135,6 +134,7 @@ namespace UniGet
                 LocalAppSettings.GetInstance().SaveSettings();
 
                 updated = true;
+                AppEventAggregator.Publish(new UpdateCompleteEvent(subUpdates));
             }
 
             if (updated)

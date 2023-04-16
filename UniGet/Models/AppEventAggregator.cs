@@ -6,17 +6,16 @@ using System.Threading.Tasks;
 
 namespace UniGet.Models
 {
-    public class AppEventAggregator
+    public static class AppEventAggregator
     {
-
-        private readonly Dictionary<Type, List<object>> _subscribersByType = new();
+        private static readonly Dictionary<Type, List<object>> _subscribersByType = new();
 
         /// <summary>
         /// Subscribe to an event <typeparamref name="T"/> and trigger handler <see cref="Action{T}"/> when event is published.
         /// </summary>
         /// <typeparam name="T">The event to subscribe to</typeparam>
         /// <param name="action">The handler of the event when it's fired</param>
-        public void Subscribe<T>(Action<T> action)
+        public static void Subscribe<T>(Action<T> action)
         {
             // If T is not in the Dictionary, assign 
             if (!_subscribersByType.TryGetValue(typeof(T), out List<object>? subscribers))
@@ -35,7 +34,7 @@ namespace UniGet.Models
         /// </summary>
         /// <typeparam name="T">The type of event to publish</typeparam>
         /// <param name="obj">The event to be published</param>
-        public void Publish<T>(T obj)
+        public static void Publish<T>(T obj)
         {
             if (_subscribersByType.TryGetValue(typeof(T), out List<object>? subscribers))
             {

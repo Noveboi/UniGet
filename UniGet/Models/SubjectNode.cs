@@ -19,6 +19,8 @@ namespace UniGet.Models
         /// </summary>
         public ObservableCollection<DocumentDataGridModel>? Documents { get; set; }
         public Subject Subject { get; }
+        public DocumentCollection Updates { get; set; } = new DocumentCollection();
+        public bool HasUpdates => Updates.BaseCount > 0;
 
         public SubjectNode(Subject subject)
         {
