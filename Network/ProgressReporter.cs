@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Network
 {
-    public static class ProgressReporterModel
+    public static class ProgressReporter
     {
         private static readonly object _lockObject = new();
         private static readonly Dictionary<string, SingleProgressInfoModel> _progs = new();

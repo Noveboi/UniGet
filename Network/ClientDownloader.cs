@@ -55,12 +55,12 @@ namespace Network
             try
             {
                 progId = uri.AbsoluteUri;
-                ProgressReporterModel.RegisterProgress(uri.AbsoluteUri, totalBytes);
+                ProgressReporter.RegisterProgress(uri.AbsoluteUri, totalBytes);
             }
             catch (ArgumentException)
             {
                 progId = uri.GetHashCode().ToString();
-                ProgressReporterModel.RegisterProgress(uri.AbsoluteUri, totalBytes, progId);
+                ProgressReporter.RegisterProgress(uri.AbsoluteUri, totalBytes, progId);
             }
 
             // Create a MemoryStream for writing the received data into a byte array
@@ -82,7 +82,7 @@ namespace Network
                     byte[] bufferCopy = new byte[bytesRead];
                     Buffer.BlockCopy(buffer, 0, bufferCopy, 0, (int)bytesRead);
                     await memStream.WriteAsync(bufferCopy);
-                    ProgressReporterModel.ReportProgress(progId, downloadedBytes, false);
+                    ProgressReporter.ReportProgress(progId, downloadedBytes, false);
                 }
             }
             finally
@@ -93,7 +93,7 @@ namespace Network
 
             //bytes = await response.Content.ReadAsByteArrayAsync();
 
-            ProgressReporterModel.ReportProgress(progId, downloadedBytes, true);
+            ProgressReporter.ReportProgress(progId, downloadedBytes, true);
             return memStream.ToArray();
 
         }

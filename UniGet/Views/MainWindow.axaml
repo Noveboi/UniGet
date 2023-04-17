@@ -59,9 +59,14 @@
     <!-- Menu Strip-->
     <Menu Classes="MenuStrip" Grid.Row="0">
       <MenuItem Header="File">
-        <MenuItem Header="Open Documents Directory"></MenuItem>
-        <MenuItem Header="Change Documents Directory"></MenuItem>
-        <MenuItem Header="Exit"></MenuItem>
+        <MenuItem Header="Open Documents Directory"
+                  Command="{Binding OpenDocDirectory}"
+                  HotKey="Ctrl+O"></MenuItem>
+        <MenuItem Header="Change Documents Directory"
+                  Command="{Binding ChangeDocDirectory}"
+                  HotKey="Ctrl+K"></MenuItem>
+        <MenuItem Header="Exit"
+                  HotKey="Alt+F4"></MenuItem>
       </MenuItem>
       <MenuItem Header="Edit"></MenuItem>
       <MenuItem Header="Help">

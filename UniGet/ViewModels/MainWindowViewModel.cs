@@ -101,11 +101,26 @@ namespace UniGet.ViewModels
         public MainWindowViewModel()
         {
             _selectedSubject.PropertyChanged += SelectedSubject_Changed;
-            ProgressReporterModel.OngoingProgressAmountChanged += MultiProgressChanged;
-            ProgressReporterModel.ProgressChanged += SingleProgressChanged;
+            ProgressReporter.OngoingProgressAmountChanged += MultiProgressChanged;
+            ProgressReporter.ProgressChanged += SingleProgressChanged;
             SubjectsList = SetupSubjectsTree();
 
             AppEventAggregator.Subscribe<UpdateCompleteEvent>(HandleUpdateComplete);
+        }
+
+        public void OpenDocDirectory()
+        {
+            string path = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
+            ProcessStartInfo explorerStartInfo = new ProcessStartInfo("explorer.exe")
+            {
+                Arguments = path
+            };
+            Process.Start(explorerStartInfo);
+        }
+
+        public async Task ChangeDocDirectory()
+        {
+            await SetNewDocDirectory();
         }
 
         /// <summary>
@@ -136,14 +151,7 @@ namespace UniGet.ViewModels
             // Check if current directory exists
             if (!Directory.Exists(Shared.ApplicationDirectory))
             {
-                OpenFolderDialog dialog = new OpenFolderDialog();
-                string? result = await dialog.ShowAsync(MainWindow.Instance);
-
-                if (result != null)
-                {
-                    Shared.ApplicationDirectory = result;
-                    LocalAppSettings.GetInstance().SetNewAppDirectory(result);
-                }
+                await SetNewDocDirectory();
             }
 
             // If a folder is given for download, and its contents and not the folder itself.
@@ -161,6 +169,23 @@ namespace UniGet.ViewModels
 
             FileDownloader fd = new();
             await fd.DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
+        }
+
+        private async Task SetNewDocDirectory()
+        {
+            OpenFolderDialog dialog = new OpenFolderDialog();
+            dialog.Title = "Select a folder to store your downloaded documents";
+            string? newPath = await dialog.ShowAsync(MainWindow.Instance);
+
+            if (newPath != null)
+            {
+                string oldPath = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
+                Shared.ApplicationDirectory = newPath;
+                LocalAppSettings.GetInstance().SetNewAppDirectory(newPath);
+                LocalAppSettings.GetInstance().SaveSettings();
+
+                await AppLogger.WriteLineAsync($"User changed document directory from {oldPath} to {newPath}");
+            }
         }
 
         public void RemoveSubject()
