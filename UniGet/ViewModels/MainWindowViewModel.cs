@@ -9,7 +9,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reactive;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UniGet.Models;
@@ -21,9 +24,10 @@ namespace UniGet.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
-        private TreeViewItemViewModel _selectedSubject = new TreeViewItemViewModel();
+        private SubjectNode _selectedSubject;
         private string _selectedSubName = "Select a subject.";
         private int _selectedDocIdx;
+        private int _selectedUpdateDocIdx;
         private bool _backButtonVisible;
         // Do NOT confuse this with the FileManagers.DirectoryStack, this stack is used for UI purposes, not file management
         private DataGridDirectoryStack _dirStack = new DataGridDirectoryStack();
@@ -47,16 +51,17 @@ namespace UniGet.ViewModels
         /// Displays the selected subject's documents in the DataGrid
         /// </summary>
         public ObservableCollection<DocumentDataGridModel> SubjectDocs { get; } = new();
+        public ObservableCollection<DocumentDataGridModel> SubjectUpdates { get; } = new();
         /// <summary>
         /// Gets and sets the subject that user last selected from the SubjectsList
         /// </summary>
         public SubjectNode SelectedSubject
         {
-            get => _selectedSubject.Node;
+            get => _selectedSubject;
             set
             {
-                _selectedSubject.Node = value;
-                _selectedSubject.OnPropertyChanged();
+                this.RaiseAndSetIfChanged(ref _selectedSubject, value);
+                SelectedSubject_Changed(_selectedSubject, new System.ComponentModel.PropertyChangedEventArgs(nameof(SelectedSubject)));
             }
         }
         public string SelectedSubjectName
@@ -73,6 +78,7 @@ namespace UniGet.ViewModels
             set
             {
                 this.RaiseAndSetIfChanged(ref _selectedDocIdx, value);
+
                 // If the new selected document happens to be a folder, traverse into its contents
                 if (SubjectDocs.Count == 0 || value < 0) 
                     return;
@@ -91,6 +97,15 @@ namespace UniGet.ViewModels
                 }
             }
         }
+
+        /// <summary>
+        /// Gets and sets the index of the selected document in the UPDATES DataGrid
+        /// </summary>
+        public int SelectedUpdateDocIdx
+        {
+            get => _selectedUpdateDocIdx;
+            set => this.RaiseAndSetIfChanged(ref _selectedUpdateDocIdx, value);
+        }
         
         public bool BackButtonVisible
         {
@@ -100,22 +115,48 @@ namespace UniGet.ViewModels
 
         public MainWindowViewModel()
         {
-            _selectedSubject.PropertyChanged += SelectedSubject_Changed;
             ProgressReporter.OngoingProgressAmountChanged += MultiProgressChanged;
             ProgressReporter.ProgressChanged += SingleProgressChanged;
             SubjectsList = SetupSubjectsTree();
+            if (SubjectsList.Count > 0)
+            {
+                SelectedSubject = SubjectsList[0];
+            }
 
             AppEventAggregator.Subscribe<UpdateCompleteEvent>(HandleUpdateComplete);
         }
 
+        /// <summary>
+        /// Opens explorer.exe for windows, and the corresponding explorers for other OS
+        /// </summary>
         public void OpenDocDirectory()
         {
             string path = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
-            ProcessStartInfo explorerStartInfo = new ProcessStartInfo("explorer.exe")
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Arguments = path
-            };
-            Process.Start(explorerStartInfo);
+                ProcessStartInfo explorerStartInfo = new ProcessStartInfo("explorer.exe")
+                {
+                    Arguments = path
+                };
+                Process.Start(explorerStartInfo);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                ProcessStartInfo finderStartInfo = new ProcessStartInfo("open")
+                {
+                    Arguments = path
+                };
+                Process.Start(finderStartInfo);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                ProcessStartInfo explorerStartInfo = new ProcessStartInfo("nautilus")
+                {
+                    Arguments = path
+                };
+                Process.Start(explorerStartInfo);
+            }
         }
 
         public async Task ChangeDocDirectory()
@@ -133,10 +174,7 @@ namespace UniGet.ViewModels
             var allUpdatedDocuments = updateCompleteEvent.updateDocuments;
             foreach (KeyValuePair<Subject, DocumentCollection> pair in allUpdatedDocuments)
             {
-                SubjectNode updatedNode = new SubjectNode(pair.Key)
-                {
-                    Updates = pair.Value
-                };
+                SubjectNode updatedNode = new SubjectNode(pair.Key, pair.Value);
                 SubjectsList.Replace(FindSubjectInList(pair.Key), updatedNode);
             }
         }
@@ -167,8 +205,23 @@ namespace UniGet.ViewModels
                 docsToDownload.Files.Add(doc.File as Document);
             }
 
-            FileDownloader fd = new();
-            await fd.DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
+            await new FileDownloader().DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
+        }
+
+        public async Task DownloadUpdateAtIndex(object param)
+        {
+            // Check if current directory exists
+            if (!Directory.Exists(Shared.ApplicationDirectory))
+            {
+                await SetNewDocDirectory();
+            }
+
+            DocumentDataGridModel doc = (DocumentDataGridModel)param;
+            DocumentCollection docsToDownload = new();
+            docsToDownload.Files.Add(doc.File as Document);
+
+            await new FileDownloader().DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
+            SubjectUpdates.Remove(doc);
         }
 
         private async Task SetNewDocDirectory()
@@ -208,6 +261,7 @@ namespace UniGet.ViewModels
         private void SelectedSubject_Changed(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             SubjectDocs.Clear();
+            SubjectUpdates.Clear();
             _dirStack.PopUntilSubject();
             BackButtonVisible = false;
 
@@ -219,7 +273,7 @@ namespace UniGet.ViewModels
             // Problem: in App.axaml.cs, the downloading, update checking, etc... is async. The problem lies in the fact that SubjectNodess
             // is initialized once BEFORE update checking is done and therefore any new documents are NOT displayed on the screen
 
-            SubjectNode subjectNode = ((TreeViewItemViewModel)sender).Node;
+            SubjectNode subjectNode = (SubjectNode)sender;
 
             if (subjectNode.Documents != null)
             {
@@ -228,6 +282,14 @@ namespace UniGet.ViewModels
                     SubjectDocs.Add(subjectNode.Documents[i]);
                 }
                 _dirStack.Push(subjectNode);
+            }
+
+            if (subjectNode.HasUpdates)
+            {
+                for (int i = 0; i < subjectNode.Updates.Count; i++)
+                {
+                    SubjectUpdates.Add(subjectNode.Updates[i]);
+                }
             }
 
             SelectedSubjectName = _dirStack.GetTitleString();

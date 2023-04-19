@@ -125,7 +125,7 @@ namespace UniGet
                 Dictionary<Subject, DocumentCollection> subUpdates = new();
                 for (int i = 0; i < updatedSubs.Count; i++)
                 {
-                    subUpdates.Add(subs[i], new UpdateChecker().GetSubjectUpdates(subs[i], updatedSubs[i]));
+                    subUpdates.Add(updatedSubs[i], new UpdateChecker().GetSubjectUpdates(subs[i], updatedSubs[i]));
                 }
                 s.Stop();
                 await AppLogger.WriteLineAsync($"Update checking complete in {(double)s.ElapsedMilliseconds / 1000}s");

@@ -98,7 +98,7 @@
               </TreeDataTemplate>
             </TreeView.ItemTemplate>
           </TreeView>
-          <!-- Subject Doc Updates TreeView-->
+          <!-- Subject Doc Updates Items-->
           <ItemsControl Items="{Binding SubjectsList}"
                    Grid.Column="1" Background="Transparent">
             <ItemsControl.ItemTemplate>
@@ -107,13 +107,12 @@
                   <Ellipse Width="20" Height="20" IsVisible="{Binding HasUpdates}"
                            Fill="HotPink" HorizontalAlignment="Center"/>
                   <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasUpdates}"
-                             Text="{Binding Updates.FullCount}" 
+                             Text="{Binding UpdateCount}" 
                              Foreground="White" FontSize="11"></TextBlock>
                 </Grid>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
-
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="* *">
           <Button Name="addSubjectButton" 
@@ -126,9 +125,15 @@
                   Command="{Binding RemoveSubject}"/>
         </Grid>
       </Grid>
-      <!-- Subject Documents Table-->
+      <!-- Subject Documents Area-->
       <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="* 50">
-        <DataGrid  Items="{Binding SubjectDocs}" 
+        <!-- Main Subject Documents Table -->
+        <Grid Grid.Row="0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" MaxHeight="150"/>
+          </Grid.RowDefinitions>
+        <DataGrid  Items="{Binding SubjectDocs}"
                    SelectedIndex="{Binding SelectedDocIdx}">
           <DataGrid.Resources>
             <vm:BitmapValueConverter x:Key="bitmapConverter"/>
@@ -147,7 +152,7 @@
                                 Width="*"/>
             <DataGridTextColumn Header="Size"
                                 Binding="{Binding Size}"/>
-            <DataGridTextColumn Header="Date" 
+            <DataGridTextColumn Header="Date"
                                 Binding="{Binding DatePublished}"/>
             <DataGridTemplateColumn>
               <DataGridTemplateColumn.CellTemplate>
@@ -164,6 +169,7 @@
             </DataGridTemplateColumn>
           </DataGrid.Columns>
         </DataGrid>
+          <!-- Back button -->
         <Button Grid.Row="1"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 Command="{Binding GoToPreviousDirectory}"
@@ -171,6 +177,46 @@
                 IsVisible="{Binding BackButtonVisible}">
           <Image Source="/Assets/back-arrow.png"/>
         </Button>
+          <!-- Subject Updated Documents Table -->
+          <Grid IsVisible="{Binding !!SubjectUpdates.Count}" Grid.Row="2" RowDefinitions="30 *">
+            <!-- Title -->
+            <TextBlock Text="Updates Available!" FontSize="24" Grid.Row="0" HorizontalAlignment="Center"></TextBlock>
+            <!-- Updated documents table -->
+            <DataGrid Items="{Binding SubjectUpdates}" 
+                      SelectedIndex="{Binding SelectedUpdateDocIdx}"
+                      Grid.Row="1" Background="Wheat">
+              <DataGrid.Resources>
+                <vm:BitmapValueConverter x:Key="bitmapConverter"/>
+              </DataGrid.Resources>
+              <DataGrid.Columns>
+                <DataGridTemplateColumn>
+                  <DataTemplate>
+                    <Image Source="{Binding TypeImagePath, 
+                           Converter={StaticResource bitmapConverter}}"
+                           Width="30"
+                           Height="30"/>
+                  </DataTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Binding="{Binding Name}"
+                                    Width="*"/>
+                <DataGridTextColumn Binding="{Binding Size}"/>
+                <DataGridTextColumn Binding="{Binding DatePublished}"/>
+                <DataGridTemplateColumn>
+                  <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                      <Button Content="Download"
+                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              Command="{Binding DataContext.DownloadUpdateAtIndex, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                              CommandParameter="{Binding RelativeSource={RelativeSource Self}, Path=DataContext}"
+                              IsEnabled="True">
+                      </Button>
+                    </DataTemplate>
+                  </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+              </DataGrid.Columns>
+            </DataGrid>
+          </Grid>
+        </Grid>
       </Grid>
     </Grid>
     <Grid Grid.Row="2" Background="#D63B3B" ColumnDefinitions="* 150">
