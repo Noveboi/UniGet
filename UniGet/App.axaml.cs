@@ -178,7 +178,7 @@ namespace UniGet
         {
             var appSettings = LocalAppSettings.GetInstance();
             appSettings.UserStats.LastRunTime = DateTime.Now;
-            appSettings.SaveSettings();
+            LocalAppSettings.SaveSettings();
 
             AppLogger.WriteLine($"CONTROLLED APPLICATION EXIT (CODE {e.ApplicationExitCode})");
         }

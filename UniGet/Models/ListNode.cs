@@ -9,19 +9,19 @@ using University;
 
 namespace UniGet.Models
 {
-    public class TreeNode
+    public class ListNode
     {
         public string Name { get; }
         /// <summary>
-        /// NULL if <see cref="TreeNode"/> is a <see cref="Course"/>
+        /// NULL if <see cref="ListNode"/> is a <see cref="Course"/>
         /// </summary>
         public Subject Subject { get; set; }
-        public ObservableCollection<TreeNode> Children { get; }
+        public ObservableCollection<ListNode> Children { get; }
 
-        public TreeNode(string Name)
+        public ListNode(string Name)
         {
             this.Name = Name;
-            Children = new ObservableCollection<TreeNode>();
+            Children = new ObservableCollection<ListNode>();
         }
     }
 }

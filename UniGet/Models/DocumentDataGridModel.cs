@@ -16,12 +16,13 @@ using University;
 
 namespace UniGet.Models
 {
-    public class DocumentDataGridModel : INotifyPropertyChanged
+    /// <summary>
+    /// Represents a row in the DataGrid table of a subject's documents
+    /// </summary>
+    public class DocumentDataGridModel
     {
-        private long _size;
-        private static DocumentDataGridModel _dummyModelInstance = new DocumentDataGridModel();
-
-        public event PropertyChangedEventHandler? PropertyChanged;
+        private readonly long _size;
+        private static readonly DocumentDataGridModel _dummyModelInstance = new DocumentDataGridModel();
 
         /// <summary>
         /// Provides the path to a filetype image, depending on the type of the document

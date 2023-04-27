@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace UniGet.Models
 {
+    /// <summary>
+    /// Stores the course names found in GuNET's course catalogue on the disk
+    /// </summary>
     [Serializable]
     internal class CourseNameGetModel
     {

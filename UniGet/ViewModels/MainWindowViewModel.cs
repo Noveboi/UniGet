@@ -116,7 +116,7 @@ namespace UniGet.ViewModels
         public MainWindowViewModel()
         {
             ProgressReporter.OngoingProgressAmountChanged += MultiProgressChanged;
-            ProgressReporter.ProgressChanged += SingleProgressChanged;
+            ProgressReporter.DownloadProgressChanged += SingleProgressChanged;
             SubjectsList = SetupSubjectsTree();
             if (SubjectsList.Count > 0)
             {
@@ -205,7 +205,7 @@ namespace UniGet.ViewModels
                 docsToDownload.Files.Add(doc.File as Document);
             }
 
-            await new FileDownloader().DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
+            await new FileManager().DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
         }
 
         public async Task DownloadUpdateAtIndex(object param)
@@ -220,7 +220,7 @@ namespace UniGet.ViewModels
             DocumentCollection docsToDownload = new();
             docsToDownload.Files.Add(doc.File as Document);
 
-            await new FileDownloader().DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
+            await new FileManager().DownloadSubjectAsync(SelectedSubject.Subject, docsToDownload);
             SubjectUpdates.Remove(doc);
         }
 

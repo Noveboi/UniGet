@@ -40,9 +40,14 @@ namespace Network
             return Encoding.UTF8.GetString(await DownloadAndReportAsync(uri, fileName));
         }
 
-        private async Task<byte[]> DownloadAndReportAsync(Uri uri, string? fileName = null)
+        /// <summary>
+        /// All HTTP requests are sent from here. 
+        /// For each GET request, the response is read in the form of a Stream and additionally a SingleProgressInfo model is registered.
+        /// </summary>
+        /// <returns> The response's content byte array </returns>
+        private static async Task<byte[]> DownloadAndReportAsync(Uri uri, string? fileName = null)
         {
-            const int BUF_SIZE = 2048;
+            const int BUF_SIZE = 4096;
             long downloadedBytes = 0;
             string progId;
 
@@ -55,12 +60,12 @@ namespace Network
             try
             {
                 progId = uri.AbsoluteUri;
-                ProgressReporter.RegisterProgress(uri.AbsoluteUri, totalBytes);
+                ProgressReporter.RegisterDownloadProgress(uri.AbsoluteUri, totalBytes);
             }
             catch (ArgumentException)
             {
                 progId = uri.GetHashCode().ToString();
-                ProgressReporter.RegisterProgress(uri.AbsoluteUri, totalBytes, progId);
+                ProgressReporter.RegisterDownloadProgress(uri.AbsoluteUri, totalBytes, progId);
             }
 
             // Create a MemoryStream for writing the received data into a byte array
@@ -71,7 +76,7 @@ namespace Network
             byte[] buffer = new byte[BUF_SIZE];
             long bytesRead = 0;
 
-            // try - finally is for proper disposal of the responseStream
+            // try/finally is for proper disposal of the responseStream
             try
             {
                 // Read the received responseStream in chunks. This is for the purposes of reporting the progress made 
@@ -82,7 +87,7 @@ namespace Network
                     byte[] bufferCopy = new byte[bytesRead];
                     Buffer.BlockCopy(buffer, 0, bufferCopy, 0, (int)bytesRead);
                     await memStream.WriteAsync(bufferCopy);
-                    ProgressReporter.ReportProgress(progId, downloadedBytes, false);
+                    ProgressReporter.ReportDownloadProgress(progId, downloadedBytes, false);
                 }
             }
             finally
@@ -93,9 +98,8 @@ namespace Network
 
             //bytes = await response.Content.ReadAsByteArrayAsync();
 
-            ProgressReporter.ReportProgress(progId, downloadedBytes, true);
+            ProgressReporter.ReportDownloadProgress(progId, downloadedBytes, true);
             return memStream.ToArray();
-
         }
     }
 }

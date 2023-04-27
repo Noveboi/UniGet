@@ -1,84 +1,141 @@
-﻿using University;
+﻿using System.Diagnostics;
+using University;
 using Network;
 
 namespace FileManagers
 {
     /// <summary>
-    /// Downloads specific <see cref="Document"/>s or entire <see cref="Subject"/>s into disk
+    /// Responsible for 
     /// </summary>
-    public class FileDownloader
+    internal class FileDownloader : IFileDownloader
     {
-        private IFileManager _fileManager;
+        private readonly ClientDownloader _downloader;
         public FileDownloader()
         {
-            _fileManager = new FileManager();
-            // Read from config.json into _initialDirectory 
+            _downloader = new();
         }
 
-        #region Download Methods (Write)
-        public async Task DownloadSubjectAsync(Subject subject, DocumentCollection? specificDocuments = null)
+        public async Task DownloadDocumentAsync(Document document, string path)
         {
-            DirectoryStack directoryStack = new DirectoryStack(DirectoryStack.Mode.Write);
+            string fullPath = GetFullFilePath(document, path);
 
-            // Kickstart the process by pushing the main subject folder into the DirectoryStack
-            directoryStack.Push(subject.Name, subject.Documents);
-            string fullPath = directoryStack.GetCwd();
-            Directory.CreateDirectory(fullPath);
+            AppLogger.WriteLine($"Downloading document {document.Name}.");
+            Stopwatch watch = Stopwatch.StartNew();
 
-            if (specificDocuments == null)
-                await GetDocumentsAsync(subject.Documents, directoryStack);
-            else
-                await GetDocumentsAsync(subject.Documents, directoryStack, specificDocuments);
+            byte[] bytes = await _downloader.DownloadAsync(document.DownloadLink, document.Name);
+
+            File.WriteAllBytes(fullPath, bytes);
+            
+            watch.Stop();
+            AppLogger.WriteLine($"Finished downloading {document.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
         }
-
-        private async Task GetDocumentsAsync(DocumentCollection documents, DirectoryStack directoryStack, DocumentCollection? specificDocuments = null)
+        public string GetFullFilePath(Document document, string cwd)
         {
-            // 0.5 -> Determine the required downloads for progress reporting
-            int downloadsScheduled = 0;
-
-            foreach(Document file in documents.Files) 
+            string filteredName = ReplaceIllegalChars(document.Name);
+            string extension = GetDocType(document);
+            if (cwd.Contains($"{filteredName}.{extension}"))
+                return cwd;
+            string fullPath = $"{cwd}/{filteredName}.{extension}";
+            return fullPath;
+        }
+        public bool FileNeedsUpdate(string fullPath, DateTime datePublished)
+        {
+            if (File.Exists(fullPath))
             {
-                string fullPath = _fileManager.GetFullFilePath(file, directoryStack.GetCwd());
-
-                if ((specificDocuments != null
-                    && specificDocuments.Files.Contains(file))
-                    || specificDocuments == null)
+                AppLogger.WriteLine($"Found existing file at {fullPath}");
+                if (File.GetCreationTime(fullPath) < datePublished)
                 {
-                    if (_fileManager.FileNeedsUpdate(fullPath, file.Date))
-                        downloadsScheduled++;
+                    AppLogger.WriteLine($"Document at: {fullPath} requires update.");
+                    return true;
+                }
+                else
+                {
+                    AppLogger.WriteLine($"The existing file remains unchanged");
+                    return false;
                 }
             }
+            return true;
+        }
 
-
-            // 1 -> Download all the documents and then move on to Folders
-
-            foreach (Document file in documents.Files)
+        private string ReplaceIllegalChars(string fileName)
+        {
+            if (fileName.Contains('/'))
             {
-                string dirPath = directoryStack.GetCwd();
-                string fullPath = _fileManager.GetFullFilePath(file, dirPath);
-
-                if ((specificDocuments != null
-                    && specificDocuments.Files.Contains(file))
-                    || specificDocuments == null)
-                {
-                    if (_fileManager.FileNeedsUpdate(fullPath, file.Date))
-                    {
-                        // Create the directory if it doesn't exist
-                        Directory.CreateDirectory(dirPath);
-                        await _fileManager.DownloadDocumentAsync(file, fullPath);
-                    }
-                }
+                fileName = fileName.Replace('/', '-');
+                ReplaceIllegalChars(fileName);
+            }
+            if (fileName.Contains('\\'))
+            {
+                fileName = fileName.Replace('\\', '-');
+                ReplaceIllegalChars(fileName);
+            }
+            if (fileName.Contains(':'))
+            {
+                fileName = fileName.Replace(':', ' ');
+                ReplaceIllegalChars(fileName);
+            }
+            if (fileName.Contains('*'))
+            {
+                fileName = fileName.Replace('?', ' ');
+                ReplaceIllegalChars(fileName);
+            }
+            if (fileName.Contains('"'))
+            {
+                fileName = fileName.Replace('"', '\'');
+                ReplaceIllegalChars(fileName);
+            }
+            if (fileName.Contains('<'))
+            {
+                fileName = fileName.Replace('<', '(');
+                ReplaceIllegalChars(fileName);
+            }
+            if (fileName.Contains('>'))
+            {
+                fileName = fileName.Replace('>', ')');
+                ReplaceIllegalChars(fileName);
+            }
+            if (fileName.Contains('|'))
+            {
+                fileName = fileName.Replace('|', '-');
+                ReplaceIllegalChars(fileName);
             }
 
-            // 2 -> When all documents have been downloaded, begin navigating the folders
+            return fileName;
+        }
 
-            foreach (Folder folder in documents.Folders)
+        private string GetDocType(Document doc)
+        {
+            if (doc.Name.Contains('.'))
+                return string.Empty;
+            switch (doc.Type)
             {
-                directoryStack.Push(folder.Name, folder.Documents);
-                await GetDocumentsAsync(folder.Documents, directoryStack, specificDocuments);
-                directoryStack.Pop();
+                case DocType.Pdf:
+                    return "pdf";
+                case DocType.Docx:
+                    return "docx";
+                case DocType.Zip:
+                    return "zip";
+                case DocType.Mp4:
+                    return "mp4";
+                case DocType.Txt:
+                    return "txt";
+                case DocType.Py:
+                    return "py";
+                case DocType.Doc:
+                    return "doc";
+                case DocType.Mp3:
+                    return "mp3";
+                case DocType.Jpg:
+                    return "jpg";
+                case DocType.Jpeg:
+                    return "jpeg";
+                case DocType.Png:
+                    return "png";
+                case DocType.Unknown:
+                    return string.Empty;
+                default:
+                    return string.Empty;
             }
         }
-        #endregion
     }
 }

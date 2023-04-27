@@ -19,8 +19,8 @@ namespace UniGet.ViewModels
     public class SubjectSelectionViewModel : ViewModelBase
     {
         private ObservableCollection<SubjectNode> _subjectNodes;
-        public ObservableCollection<TreeNode> Courses { get; }
-        public ObservableCollection<TreeNode> SelectedSubjects { get; }
+        public ObservableCollection<ListNode> Courses { get; }
+        public ObservableCollection<ListNode> SelectedSubjects { get; }
         public ReactiveCommand<Unit,Unit> Subscribe { get; }
         public SubjectSelectionViewModel(ObservableCollection<SubjectNode> subjectNodes) : this()
         {
@@ -29,9 +29,9 @@ namespace UniGet.ViewModels
 
         public SubjectSelectionViewModel()
         {
-            SelectedSubjects = new ObservableCollection<TreeNode>();
+            SelectedSubjects = new ObservableCollection<ListNode>();
             Subscribe = ReactiveCommand.Create(SubscribeToSelectedSubjects);
-            Courses = new ObservableCollection<TreeNode>();
+            Courses = new ObservableCollection<ListNode>();
 
             ReadFromCoursesAndSetupTree
                 (JsonManager.
@@ -53,13 +53,13 @@ namespace UniGet.ViewModels
         private void ReadFromCoursesAndSetupTree(List<string> courseNames)
         {
             List<Course> courses = new();
-            TreeNode root = new("Root");
+            ListNode root = new("Root");
             // i = 1, to skip the course ΑΝΑΚΟΙΝΩΣΕΙΣ
             for (int i = 1; i < courseNames.Count; i++)
             {
                 courses.Add(JsonManager.ReadCourseFromFile(courseNames[i]));
                 // Add the course names
-                root.Children.Add(new TreeNode(courseNames[i]));
+                root.Children.Add(new ListNode(courseNames[i]));
             }
 
             // Under each course name, add its subjects
@@ -72,7 +72,7 @@ namespace UniGet.ViewModels
                     root.Children[i]
                         .Children
                         .Add
-                        (new TreeNode(courses[i].Subjects[j].Name) 
+                        (new ListNode(courses[i].Subjects[j].Name) 
                         { Subject = courses[i].Subjects[j] });
                 }
                 Courses.Add(root.Children[i]);

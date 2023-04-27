@@ -1,22 +1,19 @@
-﻿using Avalonia;
-using Avalonia.Controls;
-using FileManagers;
+﻿using FileManagers;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity.Infrastructure;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using University;
 
 namespace UniGet.Models.AppSettings
 {
+    /// <summary>
+    /// Provides crucial info for the application such as user subscriptions, last update time, and more.
+    /// The singleton is stored on disk in appsettings.json
+    /// </summary>
     internal class LocalAppSettings
     {
-        private static string _path = $"{Shared.ConfigDirectory}/appsettings.json";
-        private static LocalAppSettings _instance;
+        private const string _path = $"{Shared.ConfigDirectory}/appsettings.json";
+        private static LocalAppSettings? _instance;
 
         public static LocalAppSettings GetInstance()
         {
@@ -39,6 +36,12 @@ namespace UniGet.Models.AppSettings
                 AppLogger.WriteLine($"Fixing exception: {fex.Message}", AppLogger.MessageType.HandledException);
                 WriteDefaults();
             }
+
+            if (_instance == null)
+            {
+                throw new Exception("LocalAppSettings instance is null after null-checking");
+            }
+
             return _instance;
         }
 
@@ -79,7 +82,7 @@ namespace UniGet.Models.AppSettings
             JsonManager.WriteJsonToFile(_instance, _path);
         }
 
-        public void SaveSettings()
+        public static void SaveSettings()
         {
             JsonManager.WriteJsonToFile(_instance, _path);
         }
@@ -89,9 +92,12 @@ namespace UniGet.Models.AppSettings
         /// </summary>
         public static void WriteDefaults()
         {
-            _instance = new();
-            _instance.UserStats = new UserStats() { LastRunTime = DateTime.MinValue, LastUpdateTime = DateTime.MinValue };
-            _instance.UserConfig = new UserConfig() { Subscriptions = new List<Subject>() };
+            _instance = new()
+            {
+                UserStats = new UserStats() { LastRunTime = DateTime.MinValue, LastUpdateTime = DateTime.MinValue },
+                UserConfig = new UserConfig() { Subscriptions = new List<Subject>() }
+            };
+
             JsonManager.WriteJsonToFile(_instance, _path);
         }
 

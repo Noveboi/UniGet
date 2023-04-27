@@ -7,7 +7,7 @@ using University;
 
 namespace FileManagers
 {
-    internal interface IFileManager
+    internal interface IFileDownloader
     {
         /// <summary>
         /// Downloads the specified document to disk.

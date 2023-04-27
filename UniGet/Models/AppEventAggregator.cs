@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace UniGet.Models
 {
+    /// <summary>
+    /// Intermediate class used for establishing a one-to-many communication bus between classes 
+    /// </summary>
     public static class AppEventAggregator
     {
         private static readonly Dictionary<Type, List<object>> _subscribersByType = new();

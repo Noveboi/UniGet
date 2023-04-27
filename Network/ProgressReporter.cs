@@ -7,36 +7,56 @@ using System.Threading.Tasks;
 
 namespace Network
 {
+    /// <summary>
+    /// Register and report various progress models in order to keep track of various asynchronous tasks happening.
+    /// Currently supports the following progress models:
+    /// <list type="bullet">
+    /// <item> <see cref="SingleProgressInfoModel"/> is used for keep track of how many bytes have been downloaded from a specific file. 
+    ///        The progress reporter automatically registers another event of type <see cref="MultiProgressInfoEventArgs"/> that keeps 
+    ///        track of how many <see cref="SingleProgressInfoModel"></see> objects are still ongoing.
+    /// </item>
+    /// <item>
+    /// Temp
+    /// </item>
+    /// </list>
+    /// </summary>
     public static class ProgressReporter
     {
         private static readonly object _lockObject = new();
-        private static readonly Dictionary<string, SingleProgressInfoModel> _progs = new();
+        private static readonly Dictionary<string, SingleProgressInfoModel> _downloadProgs = new();
 
-        public static event EventHandler<SingleProgressInfoEventArgs>? ProgressChanged;
+        public static event EventHandler<SingleProgressInfoEventArgs>? DownloadProgressChanged;
         public static event EventHandler<MultiProgressInfoEventArgs>? OngoingProgressAmountChanged;
-        public static void RegisterProgress(string downloadee, long bytes, string? progressId = null)
+        /// <summary>
+        /// Register a SingleProgressInfoModel to keep track of the downloading progress of a file/website
+        /// </summary>
+        /// <exception cref="ArgumentException">Is thrown when there is a duplicate key added in the progress dictionary</exception>
+        public static void RegisterDownloadProgress(string downloadeeName, long bytes, string? progressId = null)
         {
-            var info = new SingleProgressInfoModel(downloadee, bytes);
+            var info = new SingleProgressInfoModel(downloadeeName, bytes);
             lock (_lockObject)
             {
-                if (_progs.ContainsKey(downloadee) || (progressId != null && _progs.ContainsKey(progressId)))
+                if (_downloadProgs.ContainsKey(downloadeeName) || (progressId != null && _downloadProgs.ContainsKey(progressId)))
                 {
-                    throw new ArgumentException($"Progress dictionary already contains key {progressId ?? downloadee}");
+                    throw new ArgumentException($"Progress dictionary already contains key {progressId ?? downloadeeName}");
                 }
 
                 if (progressId != null)
                 {
-                    _progs.Add(progressId, info);
+                    _downloadProgs.Add(progressId, info);
                 }
                 else
                 {
-                    _progs.Add(downloadee, info);
+                    _downloadProgs.Add(downloadeeName, info);
                 }
             }
-            OnOngoingProgressChanged(new MultiProgressInfoEventArgs(_progs.Keys.ToList()));
+            OnOngoingProgressChanged(new MultiProgressInfoEventArgs(_downloadProgs.Keys.ToList()));
         }
 
-        public static void ReportProgress(string progressId, long bytesDownloaded, bool downloadComplete)
+        /// <summary>
+        /// Report a change in progress by specifying new updated values for an already existing SingleProgressInfoModel.
+        /// </summary>
+        public static void ReportDownloadProgress(string progressId, long bytesDownloaded, bool downloadComplete)
         {
             SingleProgressInfoModel prog;
             lock (_lockObject) 
@@ -47,7 +67,7 @@ namespace Network
                 }
                 else
                 {
-                    prog = _progs[progressId];
+                    prog = _downloadProgs[progressId];
                 }
             }
 
@@ -59,15 +79,15 @@ namespace Network
             {
                 lock (_lockObject)
                 {
-                    _progs.Remove(progressId);
-                    OnOngoingProgressChanged(new MultiProgressInfoEventArgs(_progs.Keys.ToList()));
+                    _downloadProgs.Remove(progressId);
+                    OnOngoingProgressChanged(new MultiProgressInfoEventArgs(_downloadProgs.Keys.ToList()));
                 }
             }
         }
 
         private static void OnProgressChanged(SingleProgressInfoEventArgs e)
         {
-            ProgressChanged?.Invoke(null, e);
+            DownloadProgressChanged?.Invoke(null, e);
         }
 
         private static void OnOngoingProgressChanged(MultiProgressInfoEventArgs e)

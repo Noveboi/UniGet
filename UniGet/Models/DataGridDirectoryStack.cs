@@ -1,20 +1,16 @@
 ﻿using FileManagers;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using UniGet.ViewModels;
 
 namespace UniGet.Models
 {
+    /// <summary>
+    /// Remembers the directory structure when the user traverses folders/directories in the DataGrid view
+    /// </summary>
     internal class DataGridDirectoryStack
     {
-        private Stack<ObservableCollection<DocumentDataGridModel>> _dirStack = new Stack<ObservableCollection<DocumentDataGridModel>>();
-        private Stack<string> _dirNames = new();
+        private readonly Stack<ObservableCollection<DocumentDataGridModel>> _dirStack = new();
+        private readonly Stack<string> _dirNames = new();
 
         public int Count => _dirStack.Count;
 

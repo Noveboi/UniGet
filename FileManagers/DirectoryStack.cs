@@ -2,11 +2,13 @@
 
 namespace FileManagers
 {
+    /// <summary>
+    /// Auxillary class that keeps track of which folders/directories we have traversed into.
+    /// </summary>
     internal class DirectoryStack
     {
-
-        private Stack<(string, DocumentCollection)> _dirStack;
-        private Mode _mode;
+        private readonly Stack<(string, DocumentCollection)> _dirStack;
+        private readonly Mode _mode;
         public enum Mode
         {
             /// <summary>
@@ -30,14 +32,27 @@ namespace FileManagers
             _mode = mode;
         }
 
+        /// <summary>
+        /// Push into the stack the <paramref name="documents"/> of the directory with name <paramref name="directoryName"/>
+        /// </summary>
         public void Push(string directoryName, DocumentCollection documents)
-        {
-            _dirStack.Push((directoryName, documents));
-            string fullPath = GetCwd();
-        }
+            => _dirStack.Push((directoryName, documents));
+        /// <summary>
+        /// Pop from the stack and return the popped item
+        /// </summary>
+        /// <returns> A 2-tuple containing the directoryName and the collection of documents that the directory contains </returns>
         public (string, DocumentCollection) Pop() => _dirStack.Pop();
+
+        /// <summary>
+        /// Get the current working directory by adding all the directories from this <see cref="DirectoryStack"/>
+        /// </summary>
         public string GetCwd() => Shared.ApplicationDirectory + "/" + GetPath();
-        public string GetPath()
+
+        /// <summary>
+        /// Construct a path string from all the entries in this <see cref="DirectoryStack"/>
+        /// </summary>
+        /// <returns></returns>
+        private string GetPath()
         {
             string path = string.Empty;
             foreach(string dirName in _dirStack.Select(tuple => tuple.Item1).Reverse())

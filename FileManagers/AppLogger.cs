@@ -2,6 +2,9 @@
 
 namespace FileManagers
 {
+    /// <summary>
+    /// Write log entries to a .txt log file
+    /// </summary>
     public static class AppLogger
     {
         private const string _path = $"{Shared.ConfigDirectory}/log.txt";

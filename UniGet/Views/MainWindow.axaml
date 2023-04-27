@@ -133,7 +133,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto" MaxHeight="150"/>
           </Grid.RowDefinitions>
-        <DataGrid  Items="{Binding SubjectDocs}"
+          <Grid RowDefinitions="* 60">
+            <DataGrid  Items="{Binding SubjectDocs}"
                    SelectedIndex="{Binding SelectedDocIdx}">
           <DataGrid.Resources>
             <vm:BitmapValueConverter x:Key="bitmapConverter"/>
@@ -169,16 +170,17 @@
             </DataGridTemplateColumn>
           </DataGrid.Columns>
         </DataGrid>
-          <!-- Back button -->
-        <Button Grid.Row="1"
-                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                Command="{Binding GoToPreviousDirectory}"
-                Background="{Binding $parent.Background}"
-                IsVisible="{Binding BackButtonVisible}">
-          <Image Source="/Assets/back-arrow.png"/>
-        </Button>
+              <!-- Back button -->
+            <Button Grid.Row="1"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    Command="{Binding GoToPreviousDirectory}"
+                    Background="{Binding $parent.Background}"
+                    IsVisible="{Binding BackButtonVisible}">
+              <Image Source="/Assets/back-arrow.png"/>
+            </Button>
+          </Grid>
           <!-- Subject Updated Documents Table -->
-          <Grid IsVisible="{Binding !!SubjectUpdates.Count}" Grid.Row="2" RowDefinitions="30 *">
+          <Grid IsVisible="{Binding !!SubjectUpdates.Count}" Grid.Row="1" RowDefinitions="30 *">
             <!-- Title -->
             <TextBlock Text="Updates Available!" FontSize="24" Grid.Row="0" HorizontalAlignment="Center"></TextBlock>
             <!-- Updated documents table -->
