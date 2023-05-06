@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using UniGet.Models;
 using UniGet.Models.AppSettings;
@@ -61,7 +63,6 @@ namespace UniGet
             {
                 await CheckForCourseNameUpdates();
                 await GetUpdates();
-                
             }
             catch (Exception ex)
             {
@@ -117,6 +118,7 @@ namespace UniGet
                 }
 
                 // Download all subjects in parallel
+                Network.ProgressReporter.ScheduleProgress(downloadTasks.Count);
                 await Task.WhenAll(downloadTasks);
                 downloadTasks.ForEach(task => updatedSubs.Add(task.Result));
 
@@ -178,7 +180,7 @@ namespace UniGet
         {
             var appSettings = LocalAppSettings.GetInstance();
             appSettings.UserStats.LastRunTime = DateTime.Now;
-            LocalAppSettings.SaveSettings();
+            LocalAppSettings.GetInstance().SaveSettings();
 
             AppLogger.WriteLine($"CONTROLLED APPLICATION EXIT (CODE {e.ApplicationExitCode})");
         }

@@ -33,6 +33,7 @@ namespace UniGet.ViewModels
         private DataGridDirectoryStack _dirStack = new DataGridDirectoryStack();
         private string _singleProgText;
         private string _multiProgText;
+        private bool _scheduleProgOverride = false;
         public string SingleProgText
         {
             get => _singleProgText;
@@ -117,6 +118,8 @@ namespace UniGet.ViewModels
         {
             ProgressReporter.OngoingProgressAmountChanged += MultiProgressChanged;
             ProgressReporter.DownloadProgressChanged += SingleProgressChanged;
+            ProgressReporter.ScheduledProgressChanged += ScheduledProgressChanged;
+
             SubjectsList = SetupSubjectsTree();
             if (SubjectsList.Count > 0)
             {
@@ -309,9 +312,23 @@ namespace UniGet.ViewModels
         public void MultiProgressChanged(object? sender, MultiProgressInfoEventArgs e)
         {
             if (e.OngoingProgCount == 0)
+            {
                 MultiProgText = string.Empty;
+                SingleProgText = "Done!";
+            }
             else
                 MultiProgText = $"{e.OngoingProgCount} remaining...";
+        }
+
+        public void ScheduledProgressChanged(object? sender, ScheduledProgressInfoEventArgs e)
+        {
+            if (e.TotalScheduled == 0)
+            {
+                MultiProgText = string.Empty;
+                SingleProgText = "Done!";
+            }
+            else
+                MultiProgText = $"{e.TotalScheduled} remaining...";
         }
 
         /// <summary>

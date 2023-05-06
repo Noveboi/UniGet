@@ -114,7 +114,7 @@ namespace Scraper
 
                     tasks.Add(GetSubjectContent(subject, subjectLink));
                 }
-
+                ProgressReporter.ScheduleProgress(tasks.Count);
                 await Task.WhenAll(tasks);
                 tasks.ForEach(task => courseSubjects.Add(task.Result));
                 watch.Stop();
@@ -162,9 +162,15 @@ namespace Scraper
             Stopwatch watch = Stopwatch.StartNew();
 
             if (subject.Name == string.Empty && subject.ID == string.Empty)
+            {
+                ProgressReporter.FinishProgress();
                 throw new Exception("Subject is empty");
+            }
             if (link == string.Empty)
+            {
+                ProgressReporter.FinishProgress();
                 return subject;
+            }
             try
             {
                 HtmlNode content = await GetPageContent($"{_mainSite}/{link}", "content");
@@ -223,6 +229,7 @@ namespace Scraper
             }
 
             watch.Stop();
+            ProgressReporter.FinishProgress();
             await AppLogger.WriteLineAsync($"\tFinished collecting content for " +
                 $"{subject.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
 
@@ -239,9 +246,15 @@ namespace Scraper
             Stopwatch watch = Stopwatch.StartNew();
 
             if (subject.Name == string.Empty && subject.ID == string.Empty)
+            {
+                ProgressReporter.FinishProgress();
                 throw new Exception("Subject is empty");
+            }
             if (subject.SiteLink == string.Empty)
+            {
+                ProgressReporter.FinishProgress();
                 return subject;
+            }
             try
             {
                 HtmlNode content = await GetPageContent($"{_mainSite}/{subject.SiteLink}", "content");
@@ -284,6 +297,7 @@ namespace Scraper
                     ($"Index out of range exception for subject {subject.Name}. " +
                     $"Most likely, there is missing data due to bad internet connection. Exception message: {ioore.Message}",
                     AppLogger.MessageType.HandledException);
+
             }
             catch (ArgumentException ae)
             {
@@ -300,6 +314,7 @@ namespace Scraper
             }
 
             watch.Stop();
+            ProgressReporter.FinishProgress();
             await AppLogger.WriteLineAsync($"\tFinished collecting content for " +
                 $"{subject.Name} in {(double)watch.ElapsedMilliseconds / 1000}s");
 
@@ -360,6 +375,7 @@ namespace Scraper
                         childFolder = await GetDocumentsAsync(subject, openDir, childFolder);
                         currentFolder.Documents.Folders.Add(childFolder);
                     }
+
                 }
             }
             catch (HttpRequestException hre)

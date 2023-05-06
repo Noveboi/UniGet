@@ -82,7 +82,7 @@ namespace UniGet.Models.AppSettings
             JsonManager.WriteJsonToFile(_instance, _path);
         }
 
-        public static void SaveSettings()
+        public void SaveSettings()
         {
             JsonManager.WriteJsonToFile(_instance, _path);
         }

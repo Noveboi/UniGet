@@ -11,22 +11,56 @@ namespace Network
     /// Register and report various progress models in order to keep track of various asynchronous tasks happening.
     /// Currently supports the following progress models:
     /// <list type="bullet">
-    /// <item> <see cref="SingleProgressInfoModel"/> is used for keep track of how many bytes have been downloaded from a specific file. 
-    ///        The progress reporter automatically registers another event of type <see cref="MultiProgressInfoEventArgs"/> that keeps 
-    ///        track of how many <see cref="SingleProgressInfoModel"></see> objects are still ongoing.
+    /// <item> 
+    /// <see cref="SingleProgressInfoModel"/> is used for keeping track of how many bytes have been downloaded from a specific file. 
+    /// The progress reporter automatically registers another event of type <see cref="MultiProgressInfoEventArgs"/> that keeps 
+    /// track of how many <see cref="SingleProgressInfoModel"></see> objects are still ongoing.
     /// </item>
     /// <item>
-    /// Temp
+    /// <see cref="ScheduledProgressInfoEventArgs"/> is used for keeping track of the total amount of tasks that are to be done for any 
+    /// action such as downloading. It is a simple counter, containing only the number of tasks and nothing else
     /// </item>
     /// </list>
     /// </summary>
     public static class ProgressReporter
     {
         private static readonly object _lockObject = new();
+        private static readonly object _scheduleLock = new();
+        private static bool _scheduleProgOverride = false;
         private static readonly Dictionary<string, SingleProgressInfoModel> _downloadProgs = new();
+        private static ScheduledProgressInfoEventArgs _scheduledProgs = new();
 
         public static event EventHandler<SingleProgressInfoEventArgs>? DownloadProgressChanged;
         public static event EventHandler<MultiProgressInfoEventArgs>? OngoingProgressAmountChanged;
+        public static event EventHandler<ScheduledProgressInfoEventArgs>? ScheduledProgressChanged;
+
+        /// <summary>
+        /// Add <paramref name="taskCount"/> scheduled tasks to the <see cref="ScheduledProgressInfoEventArgs"/> counter.
+        /// </summary>
+        public static void ScheduleProgress(int taskCount)
+        {
+            lock (_scheduleLock)
+            {
+                _scheduleProgOverride = true;
+                _scheduledProgs.TotalScheduled += taskCount;
+            }
+            ScheduledProgressChanged?.Invoke(null, _scheduledProgs);
+        }
+
+        /// <summary>
+        /// Decrement the <see cref="ScheduledProgressInfoEventArgs"/> counter by 1
+        /// </summary>
+        public static void FinishProgress()
+        {
+            lock (_scheduleLock)
+            {
+                _scheduledProgs.TotalScheduled--;
+            }
+            ScheduledProgressChanged?.Invoke(null, _scheduledProgs);
+
+            if (_scheduledProgs.TotalScheduled == 0)
+                _scheduleProgOverride = false;
+        } 
         /// <summary>
         /// Register a SingleProgressInfoModel to keep track of the downloading progress of a file/website
         /// </summary>
@@ -92,6 +126,8 @@ namespace Network
 
         private static void OnOngoingProgressChanged(MultiProgressInfoEventArgs e)
         {
+            if (_scheduleProgOverride) return;
+
             OngoingProgressAmountChanged?.Invoke(null, e);
         }
     }
