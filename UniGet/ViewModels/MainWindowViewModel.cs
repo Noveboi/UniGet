@@ -33,7 +33,6 @@ namespace UniGet.ViewModels
         private DataGridDirectoryStack _dirStack = new DataGridDirectoryStack();
         private string _singleProgText;
         private string _multiProgText;
-        private bool _scheduleProgOverride = false;
         public string SingleProgText
         {
             get => _singleProgText;
@@ -183,6 +182,25 @@ namespace UniGet.ViewModels
         }
 
         /// <summary>
+        /// Scrapes the subject info for the <see cref="SelectedSubject"/> and displays any new updates available
+        /// </summary>
+        public async Task ForceUpdateSubject()
+        {
+            Subject oldSub = SelectedSubject.Subject;
+            ProgressReporter.ScheduleProgress(1);
+            Subject newSub = await new CourseBuilder().GetSubjectContent(new Subject(oldSub));
+
+            var subUpdates = new UpdateChecker().GetSubjectUpdates(oldSub, newSub);
+            SubjectNode updatedNode = new SubjectNode(newSub, subUpdates);
+            SubjectsList.Replace(SelectedSubject, updatedNode);
+
+            var subscriptions = LocalAppSettings.GetInstance().UserConfig.Subscriptions;
+            var oldSubsciptionSubject = subscriptions.Find(sub => sub.Equals(newSub));
+            LocalAppSettings.GetInstance().UserConfig.Subscriptions.Replace(oldSubsciptionSubject, newSub);
+            LocalAppSettings.GetInstance().SaveSettings();
+        }
+
+        /// <summary>
         /// Called when user clicks the "Download" button in the DataGrid
         /// </summary>
         /// <param name="param"></param>
@@ -190,7 +208,7 @@ namespace UniGet.ViewModels
         public async Task DownloadDocAtIndex(object param)
         {
             // Check if current directory exists
-            if (!Directory.Exists(Shared.ApplicationDirectory))
+            if (!Directory.Exists(Shared.FilesDirectory))
             {
                 await SetNewDocDirectory();
             }
@@ -214,7 +232,7 @@ namespace UniGet.ViewModels
         public async Task DownloadUpdateAtIndex(object param)
         {
             // Check if current directory exists
-            if (!Directory.Exists(Shared.ApplicationDirectory))
+            if (!Directory.Exists(Shared.FilesDirectory))
             {
                 await SetNewDocDirectory();
             }
@@ -236,11 +254,18 @@ namespace UniGet.ViewModels
             if (newPath != null)
             {
                 string oldPath = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
-                Shared.ApplicationDirectory = newPath;
+                Shared.FilesDirectory = newPath;
                 LocalAppSettings.GetInstance().SetNewAppDirectory(newPath);
                 LocalAppSettings.GetInstance().SaveSettings();
 
                 await AppLogger.WriteLineAsync($"User changed document directory from {oldPath} to {newPath}");
+            }
+            else
+            {
+                Directory.CreateDirectory("./University Documents");
+                Shared.FilesDirectory = "./University Documents";
+                LocalAppSettings.GetInstance().SetNewAppDirectory("./University Documents");
+                LocalAppSettings.GetInstance().SaveSettings();
             }
         }
 

@@ -65,6 +65,9 @@
         <MenuItem Header="Change Documents Directory"
                   Command="{Binding ChangeDocDirectory}"
                   HotKey="Ctrl+K"></MenuItem>
+        <MenuItem Header="Force Update"
+                  Command="{Binding ForceUpdateSubject}"
+                  HotKey="Ctrl+D"/>
         <MenuItem Header="Exit"
                   HotKey="Alt+F4"></MenuItem>
       </MenuItem>

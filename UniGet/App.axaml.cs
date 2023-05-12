@@ -58,7 +58,7 @@ namespace UniGet
             AppLogger.ClearLog();
             await AppLogger.WriteLineAsync($"APPLICATION LAUNCHED");
 
-            Shared.ApplicationDirectory = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
+            Shared.FilesDirectory = LocalAppSettings.GetInstance().UserConfig.ApplicationDirectory;
             try
             {
                 await CheckForCourseNameUpdates();

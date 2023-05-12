@@ -44,6 +44,11 @@ namespace University
             return $"{Name} ({ID}) {(Locked ? "LOCKED" : string.Empty)}";
         }
 
+        /// <summary>
+        /// "Soft" equality check, does not check for equality in two subjects' documents.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
         public override bool Equals(object obj)
         {
             return obj is Subject subject &&

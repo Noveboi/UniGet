@@ -46,7 +46,7 @@ namespace FileManagers
         /// <summary>
         /// Get the current working directory by adding all the directories from this <see cref="DirectoryStack"/>
         /// </summary>
-        public string GetCwd() => Shared.ApplicationDirectory + "/" + GetPath();
+        public string GetCwd() => Shared.FilesDirectory + "/" + GetPath();
 
         /// <summary>
         /// Construct a path string from all the entries in this <see cref="DirectoryStack"/>

@@ -2,7 +2,7 @@
 {
     public class Shared
     {
-        public static string ApplicationDirectory = "";
+        public static string FilesDirectory = "";
         public const string ConfigDirectory = "./config";
     }
 }
