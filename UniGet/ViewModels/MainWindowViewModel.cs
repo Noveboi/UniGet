@@ -28,11 +28,17 @@ namespace UniGet.ViewModels
         private string _selectedSubName = "Select a subject.";
         private int _selectedDocIdx;
         private int _selectedUpdateDocIdx;
+        private Dictionary<Subject, DateTime> forceUpdateTimes = new();
+
         private bool _backButtonVisible;
+
         // Do NOT confuse this with the FileManagers.DirectoryStack, this stack is used for UI purposes, not file management
         private DataGridDirectoryStack _dirStack = new DataGridDirectoryStack();
+
         private string _singleProgText;
         private string _multiProgText;
+
+
         public string SingleProgText
         {
             get => _singleProgText;
@@ -187,6 +193,16 @@ namespace UniGet.ViewModels
         public async Task ForceUpdateSubject()
         {
             Subject oldSub = SelectedSubject.Subject;
+            if (forceUpdateTimes.TryGetValue(oldSub, out DateTime lastForceTime))
+            {
+                TimeSpan remainingTime = lastForceTime.AddMinutes(5) - DateTime.Now;
+                if (remainingTime > TimeSpan.Zero)
+                {
+                    SingleProgText = $"Please wait {remainingTime:mm\\:ss} minutes before updating {oldSub.Name} again.";
+                    return;
+                }
+            }
+
             ProgressReporter.ScheduleProgress(1);
             Subject newSub = await new CourseBuilder().GetSubjectContent(new Subject(oldSub));
 
@@ -196,8 +212,11 @@ namespace UniGet.ViewModels
 
             var subscriptions = LocalAppSettings.GetInstance().UserConfig.Subscriptions;
             var oldSubsciptionSubject = subscriptions.Find(sub => sub.Equals(newSub));
+
             LocalAppSettings.GetInstance().UserConfig.Subscriptions.Replace(oldSubsciptionSubject, newSub);
             LocalAppSettings.GetInstance().SaveSettings();
+
+            forceUpdateTimes[newSub] = DateTime.Now;
         }
 
         /// <summary>
